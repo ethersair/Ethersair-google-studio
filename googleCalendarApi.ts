@@ -11,6 +11,25 @@ async function safeFetch(url: string, init?: RequestInit): Promise<Response> {
   }
 }
 
+async function handleApiResponse(res: Response, apiName: string): Promise<any> {
+  if (res.ok) {
+    if (res.status === 204) return null;
+    return await res.json();
+  }
+  let errText = '';
+  try {
+    errText = await res.text();
+  } catch {}
+
+  if (res.status === 401) {
+    throw new Error(`${apiName} Error (401): Invalid or expired Google authentication credentials. Please reconnect your Google account.`);
+  }
+  if (res.status === 403) {
+    throw new Error(`${apiName} Error (403): Permission denied or missing OAuth scope. Please reconnect your Google account with full permissions.`);
+  }
+  throw new Error(`${apiName} Error (${res.status}): ${errText}`);
+}
+
 export interface CalendarEvent {
   id: string;
   summary: string;
@@ -40,12 +59,7 @@ export async function listUpcomingEvents(accessToken: string): Promise<CalendarE
     }
   });
 
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Calendar API error (${res.status}): ${errText}`);
-  }
-
-  const data = await res.json();
+  const data = await handleApiResponse(res, 'Calendar API');
   return data.items || [];
 }
 
@@ -83,12 +97,7 @@ export async function createCalendarEvent(
     })
   });
 
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Failed to create calendar event (${res.status}): ${errText}`);
-  }
-
-  return await res.json();
+  return await handleApiResponse(res, 'Calendar API');
 }
 
 /**
@@ -104,8 +113,5 @@ export async function deleteCalendarEvent(accessToken: string, eventId: string):
     }
   });
 
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Failed to delete calendar event (${res.status}): ${errText}`);
-  }
+  await handleApiResponse(res, 'Calendar API');
 }

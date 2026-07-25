@@ -11,6 +11,25 @@ async function safeFetch(url: string, init?: RequestInit): Promise<Response> {
   }
 }
 
+async function handleApiResponse(res: Response, apiName: string): Promise<any> {
+  if (res.ok) {
+    if (res.status === 204) return null;
+    return await res.json();
+  }
+  let errText = '';
+  try {
+    errText = await res.text();
+  } catch {}
+
+  if (res.status === 401) {
+    throw new Error(`${apiName} Error (401): Invalid or expired Google authentication credentials. Please reconnect your Google account.`);
+  }
+  if (res.status === 403) {
+    throw new Error(`${apiName} Error (403): Permission denied or missing OAuth scope. Please reconnect your Google account with full write/read permissions.`);
+  }
+  throw new Error(`${apiName} Error (${res.status}): ${errText}`);
+}
+
 export interface DriveDoc {
   id: string;
   name: string;
@@ -32,12 +51,7 @@ export async function listGoogleDocs(accessToken: string): Promise<DriveDoc[]> {
     }
   });
 
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Drive API error (${res.status}): ${errText}`);
-  }
-
-  const data = await res.json();
+  const data = await handleApiResponse(res, 'Drive API');
   return data.files || [];
 }
 
@@ -58,12 +72,7 @@ export async function createGoogleDoc(accessToken: string, title: string): Promi
     })
   });
 
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Failed to create Google Doc (${res.status}): ${errText}`);
-  }
-
-  const data = await res.json();
+  const data = await handleApiResponse(res, 'Google Docs API');
   return data.documentId;
 }
 
@@ -97,13 +106,7 @@ export async function appendTextToDoc(
     })
   });
 
-  if (!res.ok) {
-    const errText = await res.text();
-    if (res.status === 403) {
-      throw new Error(`Google Docs Permission Denied (403): The current Google token lacks edit permissions. Please click "Reconnect Google" to authorize write access.`);
-    }
-    throw new Error(`Failed to append text to Google Doc (${res.status}): ${errText}`);
-  }
+  await handleApiResponse(res, 'Google Docs API');
 }
 
 /**

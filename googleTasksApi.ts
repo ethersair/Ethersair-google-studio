@@ -1,5 +1,24 @@
 // Google Tasks API client-side helpers
 
+async function handleApiResponse(res: Response, apiName: string): Promise<any> {
+  if (res.ok) {
+    if (res.status === 204) return null;
+    return await res.json();
+  }
+  let errText = '';
+  try {
+    errText = await res.text();
+  } catch {}
+
+  if (res.status === 401) {
+    throw new Error(`${apiName} Error (401): Invalid or expired Google authentication credentials. Please reconnect your Google account.`);
+  }
+  if (res.status === 403) {
+    throw new Error(`${apiName} Error (403): Permission denied or missing OAuth scope. Please reconnect your Google account with full permissions.`);
+  }
+  throw new Error(`${apiName} Error (${res.status}): ${errText}`);
+}
+
 export interface GoogleTaskList {
   id: string;
   title: string;
@@ -28,12 +47,7 @@ export async function listTaskLists(accessToken: string): Promise<GoogleTaskList
     }
   });
 
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Google Tasks API error (${res.status}): ${errText}`);
-  }
-
-  const data = await res.json();
+  const data = await handleApiResponse(res, 'Google Tasks API');
   return data.items || [];
 }
 
@@ -50,12 +64,7 @@ export async function listTasks(accessToken: string, taskListId: string): Promis
     }
   });
 
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Failed to load tasks (${res.status}): ${errText}`);
-  }
-
-  const data = await res.json();
+  const data = await handleApiResponse(res, 'Google Tasks API');
   return data.items || [];
 }
 
@@ -86,12 +95,7 @@ export async function createGoogleTask(
     })
   });
 
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Failed to create Google task (${res.status}): ${errText}`);
-  }
-
-  return await res.json();
+  return await handleApiResponse(res, 'Google Tasks API');
 }
 
 /**
@@ -116,12 +120,7 @@ export async function updateTaskStatus(
     })
   });
 
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Failed to update task status (${res.status}): ${errText}`);
-  }
-
-  return await res.json();
+  return await handleApiResponse(res, 'Google Tasks API');
 }
 
 /**
@@ -141,8 +140,5 @@ export async function deleteGoogleTask(
     }
   });
 
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Failed to delete Google task (${res.status}): ${errText}`);
-  }
+  await handleApiResponse(res, 'Google Tasks API');
 }

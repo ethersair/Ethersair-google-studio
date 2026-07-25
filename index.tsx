@@ -58,6 +58,7 @@ import {
   googleSignIn, 
   googleLogout, 
   getAccessToken,
+  clearCachedAccessToken,
   auth
 } from './googleAuth';
 import { 
@@ -846,15 +847,39 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
+  const hasAlertedAuthErrorRef = useRef<boolean>(false);
+
+  const handleGoogleApiError = (err: any, defaultMsg: string) => {
+    console.error(err);
+    const msg = String(err?.message || err || '');
+    if (msg.includes('401') || msg.includes('UNAUTHENTICATED') || msg.includes('Invalid Credentials') || msg.includes('expired')) {
+      clearCachedAccessToken();
+      setGoogleToken(null);
+      if (!hasAlertedAuthErrorRef.current) {
+        hasAlertedAuthErrorRef.current = true;
+        addToast('Google Connection Required', 'Google Workspace credentials expired or not connected. Click "Connect Google" to re-authenticate.', 'info');
+        setTimeout(() => { hasAlertedAuthErrorRef.current = false; }, 12000);
+      }
+    } else if (msg.includes('Failed to fetch')) {
+      if (!hasAlertedAuthErrorRef.current) {
+        hasAlertedAuthErrorRef.current = true;
+        addToast('Network Warning', 'Unable to reach Google Workspace services. Please check your connection.', 'info');
+        setTimeout(() => { hasAlertedAuthErrorRef.current = false; }, 12000);
+      }
+    } else {
+      addToast('Error', defaultMsg, 'error');
+    }
+  };
+
   // Fetch presentations helper
   const loadUserDecks = async (token: string) => {
+    if (!token) return;
     setIsLoadingDecks(true);
     try {
       const files = await listPresentations(token);
       setSlidesDecks(files);
     } catch (err: any) {
-      console.error(err);
-      addToast('Error', 'Failed to retrieve presentation list from Google Drive.', 'error');
+      handleGoogleApiError(err, 'Failed to retrieve presentation list from Google Drive.');
     } finally {
       setIsLoadingDecks(false);
     }
@@ -862,13 +887,13 @@ export default function App() {
 
   // Fetch spreadsheets helper
   const loadUserSheets = async (token: string) => {
+    if (!token) return;
     setIsLoadingSpreadsheets(true);
     try {
       const files = await listSpreadsheets(token);
       setSpreadsheets(files);
     } catch (err: any) {
-      console.error(err);
-      addToast('Error', 'Failed to retrieve spreadsheet list from Google Drive.', 'error');
+      handleGoogleApiError(err, 'Failed to retrieve spreadsheet list from Google Drive.');
     } finally {
       setIsLoadingSpreadsheets(false);
     }
@@ -876,13 +901,13 @@ export default function App() {
 
   // Fetch drive files helper
   const loadUserDriveFiles = async (token: string) => {
+    if (!token) return;
     setIsLoadingDriveFiles(true);
     try {
       const files = await listDriveFiles(token);
       setDriveFiles(files);
     } catch (err: any) {
-      console.error(err);
-      addToast('Error', 'Failed to retrieve files from Google Drive.', 'error');
+      handleGoogleApiError(err, 'Failed to retrieve files from Google Drive.');
     } finally {
       setIsLoadingDriveFiles(false);
     }
@@ -890,13 +915,13 @@ export default function App() {
 
   // Fetch Google Docs helper
   const loadUserDocs = async (token: string) => {
+    if (!token) return;
     setIsLoadingDocs(true);
     try {
       const files = await listGoogleDocs(token);
       setDocsList(files);
     } catch (err: any) {
-      console.error(err);
-      addToast('Error', 'Failed to retrieve Google Docs from Google Drive.', 'error');
+      handleGoogleApiError(err, 'Failed to retrieve Google Docs from Google Drive.');
     } finally {
       setIsLoadingDocs(false);
     }
@@ -904,13 +929,13 @@ export default function App() {
 
   // Fetch Calendar helper
   const loadUserEvents = async (token: string) => {
+    if (!token) return;
     setIsLoadingEvents(true);
     try {
       const events = await listUpcomingEvents(token);
       setCalendarEvents(events);
     } catch (err: any) {
-      console.error(err);
-      addToast('Error', 'Failed to retrieve Google Calendar events.', 'error');
+      handleGoogleApiError(err, 'Failed to retrieve Google Calendar events.');
     } finally {
       setIsLoadingEvents(false);
     }
@@ -918,6 +943,7 @@ export default function App() {
 
   // Fetch Tasks helper
   const loadUserTasks = async (token: string) => {
+    if (!token) return;
     setIsLoadingTasks(true);
     try {
       const lists = await listTaskLists(token);
@@ -929,8 +955,7 @@ export default function App() {
         setGoogleTasks(tasks);
       }
     } catch (err: any) {
-      console.error(err);
-      addToast('Error', 'Failed to retrieve Google Tasks lists.', 'error');
+      handleGoogleApiError(err, 'Failed to retrieve Google Tasks lists.');
     } finally {
       setIsLoadingTasks(false);
     }
@@ -944,8 +969,7 @@ export default function App() {
       const tasks = await listTasks(googleToken, listId);
       setGoogleTasks(tasks);
     } catch (err: any) {
-      console.error(err);
-      addToast('Error', 'Failed to retrieve tasks.', 'error');
+      handleGoogleApiError(err, 'Failed to retrieve tasks.');
     } finally {
       setIsLoadingTasks(false);
     }
@@ -953,13 +977,13 @@ export default function App() {
 
   // Fetch Google Forms helper
   const loadUserForms = async (token: string) => {
+    if (!token) return;
     setIsLoadingForms(true);
     try {
       const forms = await listGoogleForms(token);
       setFormsList(forms);
     } catch (err: any) {
-      console.error(err);
-      addToast('Error', 'Failed to retrieve Google Forms from Google Drive.', 'error');
+      handleGoogleApiError(err, 'Failed to retrieve Google Forms from Google Drive.');
     } finally {
       setIsLoadingForms(false);
     }
@@ -1165,14 +1189,38 @@ export default function App() {
     }
   };
 
+  const checkTokenValidity = async (token: string): Promise<boolean> => {
+    if (!token) return false;
+    try {
+      const res = await fetch(`https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=${encodeURIComponent(token)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.exp && Number(data.exp) > Math.floor(Date.now() / 1000)) {
+          return true;
+        }
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  };
+
   const loadAllWorkspaceData = async (token: string) => {
+    if (!token) return;
+    const isValid = await checkTokenValidity(token);
+    if (!isValid) {
+      clearCachedAccessToken();
+      setGoogleToken(null);
+      return;
+    }
+
+    loadUserDriveFiles(token);
     loadUserDecks(token);
     loadUserSheets(token);
     loadUserDocs(token);
     loadUserEvents(token);
     loadUserTasks(token);
     loadUserForms(token);
-    loadUserDriveFiles(token);
   };
 
   // Google Sheets Action Handlers

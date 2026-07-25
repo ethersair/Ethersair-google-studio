@@ -1,5 +1,24 @@
 // Google Forms and Google Drive API client-side helpers
 
+async function handleApiResponse(res: Response, apiName: string): Promise<any> {
+  if (res.ok) {
+    if (res.status === 204) return null;
+    return await res.json();
+  }
+  let errText = '';
+  try {
+    errText = await res.text();
+  } catch {}
+
+  if (res.status === 401) {
+    throw new Error(`${apiName} Error (401): Invalid or expired Google authentication credentials. Please reconnect your Google account.`);
+  }
+  if (res.status === 403) {
+    throw new Error(`${apiName} Error (403): Permission denied or missing OAuth scope. Please reconnect your Google account with full permissions.`);
+  }
+  throw new Error(`${apiName} Error (${res.status}): ${errText}`);
+}
+
 export interface GoogleForm {
   formId: string;
   info: {
@@ -24,12 +43,7 @@ export async function listGoogleForms(accessToken: string): Promise<any[]> {
     }
   });
 
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Drive API error (${res.status}): ${errText}`);
-  }
-
-  const data = await res.json();
+  const data = await handleApiResponse(res, 'Drive API');
   return data.files || [];
 }
 
@@ -53,12 +67,7 @@ export async function createGoogleForm(accessToken: string, title: string, descr
     })
   });
 
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Failed to create Google Form (${res.status}): ${errText}`);
-  }
-
-  const form = await res.json();
+  const form = await handleApiResponse(res, 'Google Forms API');
 
   if (description) {
     // Perform description updates via batchUpdate

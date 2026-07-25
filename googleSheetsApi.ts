@@ -1,5 +1,24 @@
 // Google Sheets and Google Drive API client-side helpers
 
+async function handleApiResponse(res: Response, apiName: string): Promise<any> {
+  if (res.ok) {
+    if (res.status === 204) return null;
+    return await res.json();
+  }
+  let errText = '';
+  try {
+    errText = await res.text();
+  } catch {}
+
+  if (res.status === 401) {
+    throw new Error(`${apiName} Error (401): Invalid or expired Google authentication credentials. Please reconnect your Google account.`);
+  }
+  if (res.status === 403) {
+    throw new Error(`${apiName} Error (403): Permission denied or missing OAuth scope. Please reconnect your Google account with full write/read permissions.`);
+  }
+  throw new Error(`${apiName} Error (${res.status}): ${errText}`);
+}
+
 async function safeFetch(url: string, init?: RequestInit): Promise<Response> {
   try {
     return await fetch(url, init);
@@ -41,12 +60,7 @@ export async function listSpreadsheets(accessToken: string): Promise<DriveSpread
     }
   });
 
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Drive API error (${res.status}): ${errText}`);
-  }
-
-  const data = await res.json();
+  const data = await handleApiResponse(res, 'Drive API');
   return data.files || [];
 }
 
@@ -67,12 +81,7 @@ export async function createSpreadsheet(accessToken: string, title: string): Pro
     })
   });
 
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Failed to create spreadsheet (${res.status}): ${errText}`);
-  }
-
-  const data = await res.json();
+  const data = await handleApiResponse(res, 'Google Sheets API');
   return data.spreadsheetId;
 }
 
@@ -127,13 +136,7 @@ export async function exportPortfolioToSheet(
     })
   });
 
-  if (!res.ok) {
-    const errText = await res.text();
-    if (res.status === 403) {
-      throw new Error(`Google Sheets Permission Denied (403): The current Google token lacks edit permissions. Please click "Reconnect Google" to authorize write access.`);
-    }
-    throw new Error(`Failed to write portfolio to spreadsheet (${res.status}): ${errText}`);
-  }
+  await handleApiResponse(res, 'Google Sheets API');
 }
 
 /**
@@ -186,13 +189,7 @@ export async function exportTransactionsToSheet(
     })
   });
 
-  if (!txRes.ok) {
-    const errText = await txRes.text();
-    if (txRes.status === 403) {
-      throw new Error(`Google Sheets Permission Denied (403): The current Google token lacks edit permissions. Please click "Reconnect Google" to authorize write access.`);
-    }
-    throw new Error(`Failed to write transactions to spreadsheet (${txRes.status}): ${errText}`);
-  }
+  await handleApiResponse(txRes, 'Google Sheets API');
 }
 
 /**
@@ -206,10 +203,7 @@ export async function deleteSpreadsheetFile(accessToken: string, fileId: string)
     }
   });
 
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Failed to delete spreadsheet file (${res.status}): ${errText}`);
-  }
+  await handleApiResponse(res, 'Drive API');
 }
 
 /**
@@ -224,11 +218,6 @@ export async function listDriveFiles(accessToken: string): Promise<any[]> {
     }
   });
 
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Drive API error (${res.status}): ${errText}`);
-  }
-
-  const data = await res.json();
+  const data = await handleApiResponse(res, 'Drive API');
   return data.files || [];
 }

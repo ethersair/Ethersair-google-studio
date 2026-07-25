@@ -104,11 +104,16 @@ export const getAccessToken = async (): Promise<string | null> => {
   return cachedAccessToken;
 };
 
-// Handle logout and clear cache
-export const googleLogout = async () => {
-  await auth.signOut();
+// Clear invalid or expired cached access token
+export const clearCachedAccessToken = () => {
   cachedAccessToken = null;
   if (typeof window !== 'undefined') {
     sessionStorage.removeItem('google_access_token');
   }
+};
+
+// Handle logout and clear cache
+export const googleLogout = async () => {
+  await auth.signOut();
+  clearCachedAccessToken();
 };

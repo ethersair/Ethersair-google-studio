@@ -1,5 +1,24 @@
 // Google Slides and Google Drive API client-side helpers
 
+async function handleApiResponse(res: Response, apiName: string): Promise<any> {
+  if (res.ok) {
+    if (res.status === 204) return null;
+    return await res.json();
+  }
+  let errText = '';
+  try {
+    errText = await res.text();
+  } catch {}
+
+  if (res.status === 401) {
+    throw new Error(`${apiName} Error (401): Invalid or expired Google authentication credentials. Please reconnect your Google account.`);
+  }
+  if (res.status === 403) {
+    throw new Error(`${apiName} Error (403): Permission denied or missing OAuth scope. Please reconnect your Google account with full permissions.`);
+  }
+  throw new Error(`${apiName} Error (${res.status}): ${errText}`);
+}
+
 export interface DrivePresentation {
   id: string;
   name: string;
@@ -88,12 +107,7 @@ export async function listPresentations(accessToken: string): Promise<DrivePrese
     }
   });
 
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Drive API error (${res.status}): ${errText}`);
-  }
-
-  const data = await res.json();
+  const data = await handleApiResponse(res, 'Drive API');
   return data.files || [];
 }
 
@@ -117,12 +131,7 @@ export async function createPresentationFromDeck(
     })
   });
 
-  if (!createRes.ok) {
-    const errText = await createRes.text();
-    throw new Error(`Failed to create presentation (${createRes.status}): ${errText}`);
-  }
-
-  const presentation = await createRes.json();
+  const presentation = await handleApiResponse(createRes, 'Google Slides API');
   const presentationId = presentation.presentationId;
 
   // Since Google Slides automatically includes a default starting slide (index 0) with a Title layout,
@@ -377,10 +386,7 @@ export async function createPresentationFromDeck(
     })
   });
 
-  if (!updateRes.ok) {
-    const errText = await updateRes.text();
-    throw new Error(`Slides layout update failed (${updateRes.status}): ${errText}`);
-  }
+  await handleApiResponse(updateRes, 'Google Slides API');
 
   return presentationId;
 }
@@ -396,8 +402,5 @@ export async function deletePresentationFile(accessToken: string, fileId: string
     }
   });
 
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Failed to delete presentation file (${res.status}): ${errText}`);
-  }
+  await handleApiResponse(res, 'Drive API');
 }
