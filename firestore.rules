@@ -1,0 +1,59 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Global Helper Functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+    
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow create, update: if isOwner(userId)
+        && isValidId(userId)
+        && incoming().userId == userId
+        && incoming().email is string
+        && incoming().email.size() <= 256;
+      allow delete: if false;
+    }
+
+    // Portfolios collection
+    match /portfolios/{portfolioId} {
+      allow get, list: if isSignedIn() && existing().ownerId == request.auth.uid;
+      allow create: if isSignedIn()
+        && isValidId(portfolioId)
+        && incoming().ownerId == request.auth.uid
+        && incoming().asset is string
+        && incoming().asset.size() <= 64;
+      allow update: if isSignedIn()
+        && existing().ownerId == request.auth.uid
+        && incoming().ownerId == request.auth.uid
+        && incoming().asset is string
+        && incoming().asset.size() <= 64;
+      allow delete: if isSignedIn() && existing().ownerId == request.auth.uid;
+    }
+  }
+}

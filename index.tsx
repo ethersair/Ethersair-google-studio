@@ -447,6 +447,7 @@ const TokenLogo = ({ logo, symbol, color }: { logo: string; symbol: string; colo
 export default function App() {
   const [activeTab, setActiveTab] = useState<'overview' | 'swap' | 'bridge' | 'stake' | 'history' | 'api' | 'nfts' | 'ethersair' | 'inscriptions' | 'slides'>('overview');
   const [currentUserEmail, setCurrentUserEmail] = useState<string>('rezadress6659@gmail.com');
+  const [walletFilter, setWalletFilter] = useState<'all' | 'eth' | 'sol' | 'btc'>('all');
 
   // NFT States
   const [nfts, setNfts] = useState<NFTItem[]>([
@@ -546,6 +547,7 @@ export default function App() {
   const [docsList, setDocsList] = useState<DriveDoc[]>([]);
   const [isLoadingDocs, setIsLoadingDocs] = useState<boolean>(false);
   const [newDocTitle, setNewDocTitle] = useState<string>('');
+  const [customDocUrlOrId, setCustomDocUrlOrId] = useState<string>('');
   const [isCreatingDoc, setIsCreatingDoc] = useState<boolean>(false);
   const [isExportingDoc, setIsExportingDoc] = useState<boolean>(false);
 
@@ -994,7 +996,39 @@ export default function App() {
       addToast('Export Success', 'DeFi portfolio summary appended to your Google Doc!', 'success');
     } catch (err: any) {
       console.error(err);
-      addToast('Error', 'Failed to export portfolio snapshot to doc.', 'error');
+      addToast('Export Failed', err.message || 'Failed to export portfolio snapshot to doc.', 'error');
+    } finally {
+      setIsExportingDoc(false);
+    }
+  };
+
+  const handleExportToCustomDoc = async () => {
+    if (!googleToken) {
+      addToast('Google Account Required', 'Please connect your Google account to write to Google Docs.', 'info');
+      return;
+    }
+    if (!customDocUrlOrId.trim()) {
+      addToast('Input Required', 'Please enter a Google Doc URL or Document ID.', 'info');
+      return;
+    }
+
+    const match = customDocUrlOrId.match(/\/d\/([a-zA-Z0-9-_]+)/);
+    const docId = (match && match[1]) ? match[1] : customDocUrlOrId.trim();
+
+    setIsExportingDoc(true);
+    try {
+      const formattedData = chainsData.map(c => ({
+        chainName: c.name,
+        tokens: c.tokens,
+        total: c.tokens.reduce((acc, t) => acc + (t.balance * t.price), 0)
+      }));
+      await exportPortfolioToDoc(googleToken, docId, formattedData, portfolioTotalBalance);
+      addToast('Export Success', 'DeFi portfolio summary appended to your specified Google Doc!', 'success');
+      setCustomDocUrlOrId('');
+      await loadUserDocs(googleToken);
+    } catch (err: any) {
+      console.error(err);
+      addToast('Export Failed', err.message || 'Failed to append report to specified Google Doc.', 'error');
     } finally {
       setIsExportingDoc(false);
     }
@@ -2857,70 +2891,115 @@ export default function App() {
       {/* CONNECT WALLET MODAL */}
       {showConnectModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
-          <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl relative">
+          <div className="w-full max-w-lg rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
             <button 
               id="close-connect-modal"
               onClick={() => setShowConnectModal(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-white transition"
+              className="absolute top-4 right-4 text-slate-400 hover:text-white transition p-1 rounded-lg hover:bg-slate-800"
             >
               <X className="w-5 h-5" />
             </button>
             
-            <div className="text-center mb-6">
+            <div className="text-center mb-5">
               <div className="mx-auto w-12 h-12 bg-indigo-500/10 rounded-full flex items-center justify-center mb-3">
                 <Wallet className="w-6 h-6 text-indigo-400" />
               </div>
-              <h3 className="text-xl font-bold text-white">Connect Web3 Wallet</h3>
-              <p className="text-sm text-slate-400 mt-1">Select your preferred wallet to access Ethers Air Portal</p>
+              <h3 className="text-xl font-bold text-white">Connect Multi-Chain Wallet</h3>
+              <p className="text-xs text-slate-400 mt-1">Select your wallet for Ethereum, Solana, or Bitcoin networks</p>
+            </div>
+
+            {/* Network Filter Tabs */}
+            <div className="flex items-center gap-1.5 p-1 bg-slate-950 border border-slate-800 rounded-xl mb-4 text-xs font-semibold">
+              {[
+                { id: 'all', label: 'All Networks' },
+                { id: 'eth', label: 'Ethereum (ETH)', icon: '💎' },
+                { id: 'sol', label: 'Solana (SOL)', icon: '🟣' },
+                { id: 'btc', label: 'Bitcoin (BTC)', icon: '🟧' },
+              ].map(tab => (
+                <button
+                  key={tab.id}
+                  id={`wallet-tab-${tab.id}`}
+                  onClick={() => setWalletFilter(tab.id as any)}
+                  className={`flex-1 py-2 px-2 rounded-lg transition text-center flex items-center justify-center gap-1 ${
+                    walletFilter === tab.id 
+                      ? 'bg-indigo-600 text-white shadow-md' 
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+                  }`}
+                >
+                  {tab.icon && <span>{tab.icon}</span>}
+                  <span>{tab.label}</span>
+                </button>
+              ))}
             </div>
 
             {/* Provider detection helper */}
             <div className="mb-4 p-3 rounded-xl bg-slate-950/80 border border-slate-800 text-xs">
-              {typeof window !== 'undefined' && (window as any).ethereum ? (
+              {typeof window !== 'undefined' && ((window as any).ethereum || (window as any).solana || (window as any).phantom || (window as any).unisat || (window as any).okxwallet) ? (
                 <div className="flex items-center gap-2 text-emerald-400">
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="font-medium">Web3 Extension Detected!</span>
-                  <span className="text-slate-400">Ethers.js is ready for a secure, live connection.</span>
+                  <span className="font-medium">Extension Detected!</span>
+                  <span className="text-slate-400">
+                    {[(window as any).ethereum && 'MetaMask/EVM', ((window as any).solana || (window as any).phantom) && 'Phantom/SOL', ((window as any).unisat || (window as any).okxwallet) && 'UniSat/BTC'].filter(Boolean).join(', ')} ready for live connection.
+                  </span>
                 </div>
               ) : (
                 <div className="flex flex-col gap-1 text-amber-400">
                   <div className="flex items-center gap-2 font-medium">
                     <span className="w-2 h-2 rounded-full bg-amber-500" />
-                    <span>Running in Sandbox Mode</span>
+                    <span>Sandbox & Live Connection Mode</span>
                   </div>
                   <span className="text-[10px] text-slate-400 leading-relaxed">
-                    No active browser extension was found. Connect MetaMask or Coinbase to simulate a full Web3 portfolio with mock funds!
+                    Connect installed wallet extension or launch instantly in sandbox mode with mock multi-chain balances!
                   </span>
                 </div>
               )}
             </div>
 
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-2.5">
               {[
-                { name: 'MetaMask', desc: 'Popular browser extension wallet via Ethers.js', icon: '🦊' },
-                { name: 'Phantom', desc: 'Solana and EVM self-custody wallet', icon: '👻' },
-                { name: 'Coinbase Wallet', desc: 'Coinbase multi-chain wallet', icon: '🔵' },
-                { name: 'WalletConnect', desc: 'Connect with mobile QR scanner', icon: '🔗' },
-              ].map(wallet => (
+                // EVM
+                { name: 'MetaMask', chain: 'eth', chainLabel: 'ETH / EVM', desc: 'Ethereum & EVM L2 browser wallet', icon: '🦊', badgeBg: 'bg-orange-500/10 text-orange-400 border-orange-500/20' },
+                { name: 'Coinbase Wallet', chain: 'eth', chainLabel: 'ETH / EVM', desc: 'Coinbase multi-chain self-custody wallet', icon: '🔵', badgeBg: 'bg-blue-500/10 text-blue-400 border-blue-500/20' },
+                { name: 'WalletConnect', chain: 'eth', chainLabel: 'EVM / QR', desc: 'Mobile wallet scan via WalletConnect', icon: '🔗', badgeBg: 'bg-sky-500/10 text-sky-400 border-sky-500/20' },
+                { name: 'Rabby Wallet', chain: 'eth', chainLabel: 'ETH / EVM', desc: 'DeFi multi-chain EVM browser extension', icon: '🐰', badgeBg: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' },
+                
+                // SOLANA
+                { name: 'Phantom', chain: 'sol', chainLabel: 'SOLANA', desc: 'Solana & multi-chain self-custody wallet', icon: '👻', badgeBg: 'bg-purple-500/10 text-purple-400 border-purple-500/20' },
+                { name: 'Solflare', chain: 'sol', chainLabel: 'SOLANA', desc: 'Solana ecosystem web & mobile wallet', icon: '🔥', badgeBg: 'bg-amber-500/10 text-amber-400 border-amber-500/20' },
+                { name: 'Backpack', chain: 'sol', chainLabel: 'SOLANA', desc: 'xNFT & Solana multi-chain wallet', icon: '🎒', badgeBg: 'bg-rose-500/10 text-rose-400 border-rose-500/20' },
+
+                // BITCOIN
+                { name: 'UniSat', chain: 'btc', chainLabel: 'BITCOIN', desc: 'Bitcoin Ordinals & BRC-20 extension', icon: '🟧', badgeBg: 'bg-amber-500/10 text-amber-400 border-amber-500/20' },
+                { name: 'Xverse', chain: 'btc', chainLabel: 'BITCOIN', desc: 'Bitcoin Taproot & Ordinals Web3 wallet', icon: '⚡', badgeBg: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' },
+                { name: 'OKX Wallet', chain: 'btc', chainLabel: 'BTC & MULTI', desc: 'Bitcoin, EVM & Solana multi-chain wallet', icon: '⬛', badgeBg: 'bg-slate-500/10 text-slate-300 border-slate-500/20' },
+              ]
+              .filter(w => walletFilter === 'all' || w.chain === walletFilter)
+              .map(wallet => (
                 <button
                   key={wallet.name}
                   id={`connect-${wallet.name.replace(/\s+/g, '-').toLowerCase()}`}
                   onClick={() => handleConnectWallet(wallet.name)}
                   disabled={connecting}
-                  className="flex items-center gap-4 p-4 rounded-xl border border-slate-800 bg-slate-950/40 hover:bg-slate-800/60 hover:border-slate-700 transition duration-150 text-left w-full group"
+                  className="flex items-center gap-3 p-3.5 rounded-xl border border-slate-800 bg-slate-950/40 hover:bg-slate-800/60 hover:border-slate-700 transition duration-150 text-left w-full group relative"
                 >
-                  <span className="text-2xl">{wallet.icon}</span>
-                  <div className="flex-1">
-                    <h4 className="font-semibold text-white text-sm group-hover:text-indigo-400 transition">{wallet.name}</h4>
-                    <p className="text-xs text-slate-400">{wallet.desc}</p>
+                  <span className="text-2xl flex-shrink-0">{wallet.icon}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-semibold text-white text-sm group-hover:text-indigo-400 transition truncate">{wallet.name}</h4>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${wallet.badgeBg}`}>
+                        {wallet.chainLabel}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-400 truncate mt-0.5">{wallet.desc}</p>
                   </div>
-                  {connecting && <RefreshCw className="w-4 h-4 text-slate-400 animate-spin" />}
+                  {connecting && <RefreshCw className="w-4 h-4 text-indigo-400 animate-spin flex-shrink-0" />}
                 </button>
               ))}
             </div>
 
-            <div className="mt-5 text-center text-xs text-slate-500">
-              Powered by Ethers.js v6. Safe & decentralized.
+            <div className="mt-5 text-center text-xs text-slate-500 flex items-center justify-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              <span>Multi-chain Web3 Support: Ethereum • Solana • Bitcoin</span>
             </div>
           </div>
         </div>
@@ -6488,10 +6567,37 @@ export default function App() {
                         </button>
                       </div>
 
-                      <div className="border-t border-slate-800/80 pt-6">
-                        <h6 className="font-bold text-xs text-white uppercase tracking-wider mb-2">Automated Portfolio Log</h6>
-                        <p className="text-[11px] text-slate-400 leading-relaxed mb-4">
-                          Select any Google Doc from the list on the right and click "Export to Doc" to automatically append a high-fidelity snapshot of your live DeFi balances.
+                      <div className="border-t border-slate-800/80 pt-6 space-y-4">
+                        <div>
+                          <h6 className="font-bold text-xs text-white uppercase tracking-wider mb-1">Target Existing Google Doc</h6>
+                          <p className="text-[11px] text-slate-400 leading-relaxed">
+                            Paste a Google Document URL (e.g. <code className="text-indigo-300 font-mono">https://docs.google.com/document/d/1ABC.../edit</code>) or Document ID to append your portfolio snapshot directly:
+                          </p>
+                        </div>
+
+                        <div className="space-y-2">
+                          <input
+                            type="text"
+                            placeholder="https://docs.google.com/document/d/... or Doc ID"
+                            value={customDocUrlOrId}
+                            onChange={(e) => setCustomDocUrlOrId(e.target.value)}
+                            className="w-full bg-slate-950/80 border border-slate-800 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-indigo-500 transition placeholder:text-slate-600 font-sans"
+                          />
+                          <button
+                            onClick={handleExportToCustomDoc}
+                            disabled={isExportingDoc || !customDocUrlOrId.trim()}
+                            className="w-full py-2.5 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-indigo-300 hover:text-white transition flex items-center justify-center gap-2 disabled:opacity-40"
+                          >
+                            <FileText className="w-3.5 h-3.5" />
+                            {isExportingDoc ? 'Exporting...' : 'Export Snapshot to This Doc'}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="border-t border-slate-800/80 pt-4">
+                        <h6 className="font-bold text-xs text-slate-300 uppercase tracking-wider mb-1">Automated Drive Sync</h6>
+                        <p className="text-[11px] text-slate-400 leading-relaxed">
+                          You can also choose any existing Google Doc from your Drive list on the right and click "Export to Doc".
                         </p>
                       </div>
                     </div>

@@ -1,5 +1,16 @@
 // Google Calendar API client-side helpers
 
+async function safeFetch(url: string, init?: RequestInit): Promise<Response> {
+  try {
+    return await fetch(url, init);
+  } catch (err: any) {
+    if (err.name === 'TypeError' || err.message?.includes('Failed to fetch')) {
+      throw new Error(`Network Error: Unable to reach Google API (${url}). Please check your connection or reconnect your Google account.`);
+    }
+    throw err;
+  }
+}
+
 export interface CalendarEvent {
   id: string;
   summary: string;
@@ -22,7 +33,7 @@ export async function listUpcomingEvents(accessToken: string): Promise<CalendarE
   const now = new Date().toISOString();
   const url = `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${encodeURIComponent(now)}&orderBy=startTime&singleEvents=true&maxResults=20`;
 
-  const res = await fetch(url, {
+  const res = await safeFetch(url, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
       'Accept': 'application/json'
@@ -52,7 +63,7 @@ export async function createCalendarEvent(
 ): Promise<CalendarEvent> {
   const url = 'https://www.googleapis.com/calendar/v3/calendars/primary/events';
 
-  const res = await fetch(url, {
+  const res = await safeFetch(url, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -86,7 +97,7 @@ export async function createCalendarEvent(
 export async function deleteCalendarEvent(accessToken: string, eventId: string): Promise<void> {
   const url = `https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`;
 
-  const res = await fetch(url, {
+  const res = await safeFetch(url, {
     method: 'DELETE',
     headers: {
       Authorization: `Bearer ${accessToken}`

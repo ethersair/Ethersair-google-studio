@@ -105,6 +105,27 @@ Keep bullet points concise, impact-oriented, and easy to read (max 3 bullet poin
     }
   });
 
+  // Dune Analytics API endpoint
+  app.get("/api/dune/query/:queryId", async (req, res) => {
+    try {
+      const apiKey = process.env.DUNE_API_KEY;
+      if (!apiKey) {
+        return res.status(400).json({ error: "DUNE_API_KEY is not configured in environment variables." });
+      }
+      const { queryId } = req.params;
+      const duneRes = await fetch(`https://api.dune.com/api/v1/query/${queryId}/results`, {
+        headers: {
+          "X-Dune-API-Key": apiKey
+        }
+      });
+      const data = await duneRes.json();
+      res.json(data);
+    } catch (error: any) {
+      console.error("Dune API error:", error);
+      res.status(500).json({ error: error.message || "Failed to fetch data from Dune" });
+    }
+  });
+
   // ----------------- DATABASE ENDPOINTS -----------------
   app.post("/api/db/user", requireAuth, async (req: AuthRequest, res) => {
     try {

@@ -1,0 +1,38 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 256 },
+        "displayName": { "type": "string", "maxLength": 128 },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["userId", "email"]
+    },
+    "UserPortfolio": {
+      "title": "User Portfolio",
+      "description": "User DeFi portfolio snapshots or settings",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string", "maxLength": 128 },
+        "asset": { "type": "string", "maxLength": 64 },
+        "amount": { "type": "number" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["ownerId", "asset"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "User profiles keyed by userId"
+    },
+    "/portfolios/{portfolioId}": {
+      "schema": { "$ref": "#/entities/UserPortfolio" },
+      "description": "User portfolio items"
+    }
+  }
+}

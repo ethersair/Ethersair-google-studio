@@ -3,7 +3,10 @@
   "appId": "1:651917280404:web:d2d66595cf5f08c79b2081",
   "apiKey": "AIzaSyBzskuNJQ5gEmknHKWjeEwh16NUf5f_74c",
   "authDomain": "meta-campaign-r6ppv.firebaseapp.com",
+  "firestoreDatabaseId": "ai-studio-remixremixremix-d2d1fc66-2829-496f-b1d6-87b5504b0fd9",
   "storageBucket": "meta-campaign-r6ppv.firebasestorage.app",
   "messagingSenderId": "651917280404",
-  "measurementId": ""
+  "measurementId": "",
+  "oAuthClientId": "651917280404-35j3dhrjo8qfrtgvb6suk8fvc0tabed8.apps.googleusercontent.com",
+  "recaptchaSiteKey": ""
 }

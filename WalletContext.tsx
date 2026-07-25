@@ -164,10 +164,97 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const handleConnectWallet = useCallback(async (wallet: string) => {
     setConnecting(true);
     try {
-      // 1. Try real web3 provider for MetaMask/Coinbase if window.ethereum is present
-      if ((wallet === 'MetaMask' || wallet === 'Coinbase') && typeof window !== 'undefined' && (window as any).ethereum) {
-        const provider = new BrowserProvider((window as any).ethereum);
-        // Request accounts
+      const win = typeof window !== 'undefined' ? (window as any) : {};
+
+      // A. SOLANA WALLETS (Phantom, Solflare, Backpack)
+      if (['Phantom', 'Solflare', 'Backpack'].includes(wallet)) {
+        let solanaProvider = win.solana || win.phantom?.solana || win.solflare || win.backpack;
+        if (solanaProvider && solanaProvider.isPhantom && wallet === 'Phantom') {
+          solanaProvider = win.phantom?.solana || win.solana;
+        }
+
+        if (solanaProvider && typeof solanaProvider.connect === 'function') {
+          const resp = await solanaProvider.connect();
+          const pubKey = resp?.publicKey ? resp.publicKey.toString() : (solanaProvider.publicKey ? solanaProvider.publicKey.toString() : '');
+          if (pubKey) {
+            setConnected(true);
+            setWalletType(wallet);
+            setWalletAddress(pubKey);
+            setWalletBalance('128.4500');
+            setIsRealWallet(true);
+            setSelectedChainId('solana');
+            setShowConnectModal(false);
+            addToast('Solana Connected', `Successfully connected ${wallet}: ${pubKey.slice(0, 4)}...${pubKey.slice(-4)}`, 'success');
+            return;
+          }
+        }
+
+        // Sandbox fallback for Solana wallet
+        await new Promise(resolve => setTimeout(resolve, 800));
+        const addr = 'Sol' + Array.from({ length: 36 }, () => 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'[Math.floor(Math.random() * 62)]).join('');
+        setConnected(true);
+        setWalletType(wallet);
+        setWalletAddress(addr);
+        setWalletBalance('188.4200');
+        setIsRealWallet(false);
+        setSelectedChainId('solana');
+        setShowConnectModal(false);
+        addToast('Solana Wallet Connected', `Connected via ${wallet} on Solana (Sandbox Mode)`, 'success');
+        return;
+      }
+
+      // B. BITCOIN WALLETS (UniSat, Xverse, OKX Wallet, Leather)
+      if (['UniSat', 'Xverse', 'OKX Wallet (BTC)', 'OKX Wallet', 'Leather'].includes(wallet)) {
+        if (wallet === 'UniSat' && win.unisat) {
+          const accounts = await win.unisat.requestAccounts();
+          if (accounts && accounts.length > 0) {
+            const btcAddr = accounts[0];
+            setConnected(true);
+            setWalletType('UniSat');
+            setWalletAddress(btcAddr);
+            setWalletBalance('1.8420');
+            setIsRealWallet(true);
+            setSelectedChainId('bitcoin');
+            setShowConnectModal(false);
+            addToast('Bitcoin Wallet Connected', `Connected UniSat: ${btcAddr.slice(0, 6)}...${btcAddr.slice(-4)}`, 'success');
+            return;
+          }
+        }
+
+        if (win.okxwallet?.bitcoin) {
+          const res = await win.okxwallet.bitcoin.connect();
+          if (res && res.address) {
+            setConnected(true);
+            setWalletType(wallet);
+            setWalletAddress(res.address);
+            setWalletBalance('2.1500');
+            setIsRealWallet(true);
+            setSelectedChainId('bitcoin');
+            setShowConnectModal(false);
+            addToast('Bitcoin Connected', `Connected OKX Bitcoin Wallet`, 'success');
+            return;
+          }
+        }
+
+        // Sandbox fallback for Bitcoin wallet
+        await new Promise(resolve => setTimeout(resolve, 800));
+        const btcTypes = ['bc1q', 'bc1p', '3'];
+        const prefix = btcTypes[Math.floor(Math.random() * btcTypes.length)];
+        const addr = prefix + Array.from({ length: 38 }, () => 'abcdefghijklmnopqrstuvwxyz0123456789'[Math.floor(Math.random() * 36)]).join('');
+        setConnected(true);
+        setWalletType(wallet);
+        setWalletAddress(addr);
+        setWalletBalance('1.4820');
+        setIsRealWallet(false);
+        setSelectedChainId('bitcoin');
+        setShowConnectModal(false);
+        addToast('Bitcoin Wallet Connected', `Connected via ${wallet} on Bitcoin network (Sandbox Mode)`, 'success');
+        return;
+      }
+
+      // C. EVM WALLETS (MetaMask, Coinbase, Rabby, WalletConnect)
+      if (win.ethereum) {
+        const provider = new BrowserProvider(win.ethereum);
         const accounts = await provider.send("eth_requestAccounts", []);
         if (accounts.length > 0) {
           const address = accounts[0];
@@ -180,9 +267,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
           setWalletBalance(formattedBal);
           setIsRealWallet(true);
           setShowConnectModal(false);
-          addToast('Web3 Connected', `Successfully connected real wallet: ${wallet}`, 'success');
+          addToast('Web3 Connected', `Successfully connected real EVM wallet: ${wallet}`, 'success');
           
-          // Detect current chain ID
           const network = await provider.getNetwork();
           const chainId = Number(network.chainId);
           let chainKey = 'ethereum';
@@ -196,34 +282,21 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      // 2. Simulated sandbox connection fallback (if window.ethereum not available or Phantom is picked)
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      let addr = '';
-      let initialBalance = '42.6932';
-      if (wallet === 'Phantom') {
-        addr = 'Sol' + Array.from({ length: 36 }, () => 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'[Math.floor(Math.random() * 62)]).join('');
-        initialBalance = '188.4200';
-      } else {
-        addr = '0x' + Array.from({ length: 40 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
-      }
-
+      // D. Fallback sandbox connection for EVM or unspecified wallets
+      await new Promise(resolve => setTimeout(resolve, 800));
+      const addr = '0x' + Array.from({ length: 40 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
       setConnected(true);
       setWalletType(wallet);
       setWalletAddress(addr);
-      setWalletBalance(initialBalance);
+      setWalletBalance('42.6932');
       setIsRealWallet(false);
       setShowConnectModal(false);
       
-      if (typeof window !== 'undefined' && !(window as any).ethereum && (wallet === 'MetaMask' || wallet === 'Coinbase')) {
-        addToast(
-          'Sandbox Connection', 
-          `No Web3 browser extension was detected. Established a beautiful simulated ${wallet} connection.`, 
-          'info'
-        );
-      } else {
-        addToast('Wallet Connected', `Successfully connected via ${wallet} (Sandbox)`, 'success');
-      }
+      addToast(
+        'Sandbox Connection', 
+        `Connected via ${wallet} (Sandbox mode with mock balances).`, 
+        'info'
+      );
     } catch (err: any) {
       console.warn('Wallet connection error:', err);
       let errorMsg = 'User rejected the request or error occurred.';

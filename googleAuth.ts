@@ -1,12 +1,17 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, User } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
 import firebaseConfig from './firebase-applet-config.json';
 
 // Initialize Firebase App
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
+export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 
 const provider = new GoogleAuthProvider();
+provider.setCustomParameters({
+  prompt: 'select_account consent'
+});
 
 // Request Google Slides, Sheets, and Drive scopes confirmed by the user
 provider.addScope('https://www.googleapis.com/auth/presentations');
@@ -23,7 +28,7 @@ provider.addScope('https://www.googleapis.com/auth/tasks');
 provider.addScope('https://www.googleapis.com/auth/forms.body');
 
 let isSigningIn = false;
-let cachedAccessToken: string | null = typeof window !== 'undefined' ? localStorage.getItem('google_access_token') : null;
+let cachedAccessToken: string | null = typeof window !== 'undefined' ? sessionStorage.getItem('google_access_token') : null;
 
 // Initialize Auth listener and handle persistent token caching
 export const initAuth = (
@@ -32,16 +37,19 @@ export const initAuth = (
 ) => {
   return onAuthStateChanged(auth, async (user: User | null) => {
     if (user) {
+      if (!cachedAccessToken && typeof window !== 'undefined') {
+        cachedAccessToken = sessionStorage.getItem('google_access_token');
+      }
       if (cachedAccessToken) {
         if (onAuthSuccess) onAuthSuccess(user, cachedAccessToken);
       } else if (!isSigningIn) {
         cachedAccessToken = null;
-        if (typeof window !== 'undefined') localStorage.removeItem('google_access_token');
+        if (typeof window !== 'undefined') sessionStorage.removeItem('google_access_token');
         if (onAuthFailure) onAuthFailure();
       }
     } else {
       cachedAccessToken = null;
-      if (typeof window !== 'undefined') localStorage.removeItem('google_access_token');
+      if (typeof window !== 'undefined') sessionStorage.removeItem('google_access_token');
       if (onAuthFailure) onAuthFailure();
     }
   });
@@ -63,7 +71,7 @@ export const googleSignIn = async (): Promise<{ user: User; accessToken: string 
 
     cachedAccessToken = credential.accessToken;
     if (typeof window !== 'undefined') {
-      localStorage.setItem('google_access_token', cachedAccessToken);
+      sessionStorage.setItem('google_access_token', cachedAccessToken);
     }
     return { user: result.user, accessToken: cachedAccessToken };
   } catch (error: any) {
@@ -93,9 +101,6 @@ export const googleSignIn = async (): Promise<{ user: User; accessToken: string 
 
 // Retrieve currently cached access token
 export const getAccessToken = async (): Promise<string | null> => {
-  if (!cachedAccessToken && typeof window !== 'undefined') {
-    cachedAccessToken = localStorage.getItem('google_access_token');
-  }
   return cachedAccessToken;
 };
 
@@ -104,6 +109,6 @@ export const googleLogout = async () => {
   await auth.signOut();
   cachedAccessToken = null;
   if (typeof window !== 'undefined') {
-    localStorage.removeItem('google_access_token');
+    sessionStorage.removeItem('google_access_token');
   }
 };

@@ -1,5 +1,16 @@
 // Google Sheets and Google Drive API client-side helpers
 
+async function safeFetch(url: string, init?: RequestInit): Promise<Response> {
+  try {
+    return await fetch(url, init);
+  } catch (err: any) {
+    if (err.name === 'TypeError' || err.message?.includes('Failed to fetch')) {
+      throw new Error(`Network Error: Unable to reach Google API (${url}). Please check your connection or reconnect your Google account.`);
+    }
+    throw err;
+  }
+}
+
 export interface DriveSpreadsheet {
   id: string;
   name: string;
@@ -23,7 +34,7 @@ export async function listSpreadsheets(accessToken: string): Promise<DriveSpread
   const query = encodeURIComponent("mimeType='application/vnd.google-apps.spreadsheet' and trashed=false");
   const url = `https://www.googleapis.com/drive/v3/files?q=${query}&fields=files(id,name,modifiedTime,webViewLink)&orderBy=modifiedTime desc&pageSize=20`;
 
-  const res = await fetch(url, {
+  const res = await safeFetch(url, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
       'Accept': 'application/json'
@@ -43,7 +54,7 @@ export async function listSpreadsheets(accessToken: string): Promise<DriveSpread
  * Create a brand new Google Spreadsheet
  */
 export async function createSpreadsheet(accessToken: string, title: string): Promise<string> {
-  const res = await fetch('https://sheets.googleapis.com/v4/spreadsheets', {
+  const res = await safeFetch('https://sheets.googleapis.com/v4/spreadsheets', {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -99,11 +110,11 @@ export async function exportPortfolioToSheet(
     });
   });
 
-  // Call spreadsheets.values.update API
-  const range = 'Sheet1!A1';
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?valueInputOption=USER_ENTERED`;
+  // Call spreadsheets.values.update API for portfolio
+  const range = 'A1';
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`;
 
-  const res = await fetch(url, {
+  const res = await safeFetch(url, {
     method: 'PUT',
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -118,6 +129,9 @@ export async function exportPortfolioToSheet(
 
   if (!res.ok) {
     const errText = await res.text();
+    if (res.status === 403) {
+      throw new Error(`Google Sheets Permission Denied (403): The current Google token lacks edit permissions. Please click "Reconnect Google" to authorize write access.`);
+    }
     throw new Error(`Failed to write portfolio to spreadsheet (${res.status}): ${errText}`);
   }
 }
@@ -155,11 +169,11 @@ export async function exportTransactionsToSheet(
     ]);
   });
 
-  // Call spreadsheets.values.update API
-  const range = 'Sheet1!A1';
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?valueInputOption=USER_ENTERED`;
+  // Call spreadsheets.values.update API for transactions
+  const range = 'A1';
+  const txUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`;
 
-  const res = await fetch(url, {
+  const txRes = await safeFetch(txUrl, {
     method: 'PUT',
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -172,9 +186,12 @@ export async function exportTransactionsToSheet(
     })
   });
 
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Failed to write transactions to spreadsheet (${res.status}): ${errText}`);
+  if (!txRes.ok) {
+    const errText = await txRes.text();
+    if (txRes.status === 403) {
+      throw new Error(`Google Sheets Permission Denied (403): The current Google token lacks edit permissions. Please click "Reconnect Google" to authorize write access.`);
+    }
+    throw new Error(`Failed to write transactions to spreadsheet (${txRes.status}): ${errText}`);
   }
 }
 
@@ -182,7 +199,7 @@ export async function exportTransactionsToSheet(
  * Delete a spreadsheet file from Google Drive (needs confirmation)
  */
 export async function deleteSpreadsheetFile(accessToken: string, fileId: string): Promise<void> {
-  const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}`, {
+  const res = await safeFetch(`https://www.googleapis.com/drive/v3/files/${fileId}`, {
     method: 'DELETE',
     headers: {
       Authorization: `Bearer ${accessToken}`
@@ -200,7 +217,7 @@ export async function deleteSpreadsheetFile(accessToken: string, fileId: string)
  */
 export async function listDriveFiles(accessToken: string): Promise<any[]> {
   const url = `https://www.googleapis.com/drive/v3/files?q=trashed=false&fields=files(id,name,mimeType,modifiedTime,webViewLink,iconLink)&orderBy=modifiedTime desc&pageSize=30`;
-  const res = await fetch(url, {
+  const res = await safeFetch(url, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
       'Accept': 'application/json'

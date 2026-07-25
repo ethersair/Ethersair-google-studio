@@ -1,5 +1,16 @@
 // Google Docs and Google Drive API client-side helpers
 
+async function safeFetch(url: string, init?: RequestInit): Promise<Response> {
+  try {
+    return await fetch(url, init);
+  } catch (err: any) {
+    if (err.name === 'TypeError' || err.message?.includes('Failed to fetch')) {
+      throw new Error(`Network Error: Unable to reach Google API (${url}). Please check your connection or reconnect your Google account.`);
+    }
+    throw err;
+  }
+}
+
 export interface DriveDoc {
   id: string;
   name: string;
@@ -14,7 +25,7 @@ export async function listGoogleDocs(accessToken: string): Promise<DriveDoc[]> {
   const query = encodeURIComponent("mimeType='application/vnd.google-apps.document' and trashed=false");
   const url = `https://www.googleapis.com/drive/v3/files?q=${query}&fields=files(id,name,modifiedTime,webViewLink)&orderBy=modifiedTime desc&pageSize=20`;
 
-  const res = await fetch(url, {
+  const res = await safeFetch(url, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
       'Accept': 'application/json'
@@ -36,7 +47,7 @@ export async function listGoogleDocs(accessToken: string): Promise<DriveDoc[]> {
 export async function createGoogleDoc(accessToken: string, title: string): Promise<string> {
   const url = 'https://docs.googleapis.com/v1/documents';
 
-  const res = await fetch(url, {
+  const res = await safeFetch(url, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -75,7 +86,7 @@ export async function appendTextToDoc(
     }
   ];
 
-  const res = await fetch(url, {
+  const res = await safeFetch(url, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -88,6 +99,9 @@ export async function appendTextToDoc(
 
   if (!res.ok) {
     const errText = await res.text();
+    if (res.status === 403) {
+      throw new Error(`Google Docs Permission Denied (403): The current Google token lacks edit permissions. Please click "Reconnect Google" to authorize write access.`);
+    }
     throw new Error(`Failed to append text to Google Doc (${res.status}): ${errText}`);
   }
 }
