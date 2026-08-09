@@ -55,19 +55,37 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     }, 5000);
   }, []);
 
+  // Safe native token balance fetcher bypassing Ethers v6 ENS lookup on unsupported networks (e.g. Avalanche 43114, Base Sepolia 84532)
+  const fetchNativeBalanceSafe = useCallback(async (provider: BrowserProvider, address: string): Promise<string> => {
+    try {
+      // 1. Direct JSON-RPC call eth_getBalance (bypasses Ethers v6 ENS resolution)
+      const rawHex: string = await provider.send('eth_getBalance', [address, 'latest']);
+      const balBigInt = BigInt(rawHex);
+      return parseFloat(formatEther(balBigInt)).toFixed(4);
+    } catch {
+      try {
+        // 2. Fallback to standard provider.getBalance
+        const bal = await provider.getBalance(address);
+        return parseFloat(formatEther(bal)).toFixed(4);
+      } catch (err) {
+        console.warn('Unable to fetch native balance via Web3 provider:', err);
+        return '0.00';
+      }
+    }
+  }, []);
+
   // Helper to get real balance
   const refreshBalanceForAddress = useCallback(async (address: string) => {
     if (typeof window !== 'undefined' && (window as any).ethereum && isRealWallet) {
       try {
         const provider = new BrowserProvider((window as any).ethereum);
-        const bal = await provider.getBalance(address);
-        const formatted = parseFloat(formatEther(bal)).toFixed(4);
+        const formatted = await fetchNativeBalanceSafe(provider, address);
         setWalletBalance(formatted);
       } catch (err) {
         console.error('Error fetching balance via Ethers:', err);
       }
     }
-  }, [isRealWallet]);
+  }, [isRealWallet, fetchNativeBalanceSafe]);
 
   // Handle Disconnect Action
   const handleDisconnect = useCallback(() => {
@@ -108,6 +126,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         const decimalChainId = parseInt(chainIdHex, 16);
         let chainKey = 'ethereum';
         if (decimalChainId === 1) chainKey = 'ethereum';
+        else if (decimalChainId === 84532 || decimalChainId === 8453) chainKey = 'base-sepolia';
         else if (decimalChainId === 137) chainKey = 'polygon';
         else if (decimalChainId === 42161) chainKey = 'arbitrum';
         else if (decimalChainId === 10) chainKey = 'optimism';
@@ -258,8 +277,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         const accounts = await provider.send("eth_requestAccounts", []);
         if (accounts.length > 0) {
           const address = accounts[0];
-          const bal = await provider.getBalance(address);
-          const formattedBal = parseFloat(formatEther(bal)).toFixed(4);
+          const formattedBal = await fetchNativeBalanceSafe(provider, address);
           
           setConnected(true);
           setWalletType(wallet);
@@ -271,8 +289,9 @@ export function WalletProvider({ children }: { children: ReactNode }) {
           
           const network = await provider.getNetwork();
           const chainId = Number(network.chainId);
-          let chainKey = 'ethereum';
+          let chainKey = 'base-sepolia';
           if (chainId === 1) chainKey = 'ethereum';
+          else if (chainId === 84532 || chainId === 8453) chainKey = 'base-sepolia';
           else if (chainId === 137) chainKey = 'polygon';
           else if (chainId === 42161) chainKey = 'arbitrum';
           else if (chainId === 10) chainKey = 'optimism';

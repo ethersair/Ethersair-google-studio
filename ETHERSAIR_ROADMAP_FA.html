@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<style>
+  @page { margin: 22mm 18mm; }
+  body {
+    font-family: "FreeSans", "DejaVu Sans", sans-serif;
+    direction: rtl;
+    font-size: 13px;
+    line-height: 1.9;
+    color: #1a1a1a;
+  }
+  .ltr { direction: ltr; unicode-bidi: embed; font-family: "DejaVu Sans Mono", monospace; }
+  h1 {
+    font-size: 26px;
+    color: #0B1120;
+    border-bottom: 3px solid #C98F2E;
+    padding-bottom: 10px;
+    margin-bottom: 4px;
+  }
+  .subtitle { color: #666; font-size: 13px; margin-bottom: 24px; }
+  h2 {
+    font-size: 18px;
+    color: #0B1120;
+    background: #F2E6C9;
+    padding: 8px 12px;
+    border-right: 5px solid #C98F2E;
+    margin-top: 30px;
+    margin-bottom: 12px;
+  }
+  h3 {
+    font-size: 15px;
+    color: #8A5A1E;
+    margin-top: 18px;
+    margin-bottom: 6px;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 4px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 10px 0 16px;
+    font-size: 12px;
+  }
+  th {
+    background: #0B1120;
+    color: #F2B84B;
+    padding: 7px 10px;
+    text-align: right;
+  }
+  td {
+    padding: 6px 10px;
+    border-bottom: 1px solid #e0e0e0;
+    vertical-align: top;
+  }
+  tr:nth-child(even) td { background: #FAFAFA; }
+  .status-done { color: #1a7d3a; font-weight: bold; }
+  .status-progress { color: #b9770e; font-weight: bold; }
+  .status-todo { color: #999; }
+  code {
+    font-family: "DejaVu Sans Mono", monospace;
+    background: #F0F0F0;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 11.5px;
+    direction: ltr;
+    unicode-bidi: embed;
+    display: inline-block;
+  }
+  pre {
+    background: #0B1120;
+    color: #E8ECF4;
+    padding: 12px 14px;
+    border-radius: 8px;
+    direction: ltr;
+    unicode-bidi: embed;
+    text-align: left;
+    font-family: "DejaVu Sans Mono", monospace;
+    font-size: 11px;
+    line-height: 1.5;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    margin: 8px 0 16px;
+  }
+  .note {
+    background: #FEFCE8;
+    border: 1px solid #FDE68A;
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin: 10px 0;
+    font-size: 12px;
+  }
+  .note b { color: #854D0E; }
+  ul, ol { margin: 6px 0; padding-right: 22px; }
+  li { margin-bottom: 4px; }
+  .cover {
+    text-align: center;
+    padding-top: 120px;
+    page-break-after: always;
+  }
+  .cover h1 { border: none; font-size: 34px; }
+  .cover .badge {
+    display: inline-block;
+    background: #0B1120;
+    color: #F2B84B;
+    padding: 6px 18px;
+    border-radius: 20px;
+    font-size: 13px;
+    margin-top: 20px;
+    direction: ltr;
+  }
+  .toc { page-break-after: always; }
+  .toc ol { font-size: 14px; line-height: 2.4; }
+  .toc a { color: #1a1a1a; text-decoration: none; }
+  .section { page-break-before: always; }
+  .chain-tag {
+    display: inline-block;
+    background: #E8ECF4;
+    color: #0B1120;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: bold;
+    margin-left: 6px;
+  }
+  footer-note { font-size: 10px; color: #999; }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <h1>EthersAir</h1>
+  <p style="font-size:16px; color:#555;">نقشه راه پروژه، وضعیت کد چندزنجیره‌ای، و راهنمای راهاندازی محیط توسعه</p>
+  <div class="badge">Base Sepolia · Solana Devnet · LayerZero V2</div>
+  <p style="margin-top:60px; color:#999; font-size:12px;">تهیهشده برای رضا · تابستان ۱۴۰۵ (۲۰۲۶)</p>
+</div>
+
+<div class="toc">
+  <h2>فهرست مطالب</h2>
+  <ol>
+    <li>خلاصه اجرایی و نقشه راه کلی</li>
+    <li>وضعیت زیرساخت EVM (Base Sepolia) — قراردادها، آدرس‌ها، Swap</li>
+    <li>وضعیت Solana (Devnet) — کیف پول، توکن، برنامه Staking با Anchor</li>
+    <li>Bridge بین‌زنجیره‌ای با LayerZero V2 — معماری و وضعیت فعلی</li>
+    <li>راهاندازی کامل محیط WSL2/Ubuntu برای توسعه Solana</li>
+    <li>مشکلات شبکه و راهحل‌های دائمی (پروکسی، DNS)</li>
+    <li>قدم‌های بعدی پیشنهادی</li>
+  </ol>
+</div>
+
+<div class="section">
+<h1>۱. خلاصه اجرایی و نقشه راه کلی</h1>
+<p class="subtitle">تصویر کلی پروژه EthersAir و مسیر پیشرو</p>
+
+<p>EthersAir یک پلتفرم دیفای چندزنجیره‌ای (Multi-chain DeFi) است که هدفش ارائه توکن، استیکینگ، سواپ، و در نهایت بریج بین چندین بلاکچین است. رویکرد فعلی: شروع با زیرساخت EVM (که پایدارترین و کمدردسرترین محیط برای توسعه است)، تکمیل Solana، و سپس اتصال زنجیره‌ها به هم با LayerZero.</p>
+
+<h2>جدول وضعیت کلی</h2>
+<table>
+<tr><th>بخش</th><th>زنجیره</th><th>وضعیت</th><th>توضیح</th></tr>
+<tr><td>توکن‌های اصلی</td><td>Base Sepolia</td><td class="status-done">✅ تکمیل</td><td>ETHERSAIR1986 و WETHERSAIR1986 دیپلوی و mint شده‌اند</td></tr>
+<tr><td>Staking (۱۲۵٪ APY)</td><td>Base Sepolia</td><td class="status-done">✅ تکمیل</td><td>قرارداد UUPS، آماده استفاده</td></tr>
+<tr><td>AMM Swap Pool</td><td>Base Sepolia</td><td class="status-done">✅ تکمیل</td><td>دو استخر با نقدینگی، تست‌شده از رابط کاربری</td></tr>
+<tr><td>فرانت‌اند Swap</td><td>Base Sepolia</td><td class="status-done">✅ تکمیل</td><td>صفحه HTML با اتصال MetaMask، چند سواپ موفق ثبت شده</td></tr>
+<tr><td>توکن SPL + کیف پول</td><td>Solana Devnet</td><td class="status-done">✅ تکمیل</td><td>Mint ساخته و توکن‌ها منتقل شده‌اند</td></tr>
+<tr><td>برنامه Staking (Anchor)</td><td>Solana Devnet</td><td class="status-progress">🟡 دیپلوی شده</td><td>کامپایل و دیپلوی موفق؛ تست کامل instructionها باقی مانده</td></tr>
+<tr><td>Bridge (LayerZero OFT)</td><td>Base ⇄ Arbitrum ⇄ Optimism</td><td class="status-progress">🟡 در حال کار</td><td>پکیج‌ها نصب شده؛ نوشتن قرارداد Adapter/OFT باقی مانده</td></tr>
+<tr><td>بلاکچین اختصاصی EthersAir</td><td>—</td><td class="status-todo">⬜ آینده</td><td>پیشنهاد: Layer2/Appchain سازگار با EVM (OP Stack یا Arbitrum Orbit)</td></tr>
+</table>
+
+<div class="note"><b>نکته راهبردی:</b> بر اساس تجربه عملی، مسیر EVM (Base) به‌مراتب کمدردسرتر از Solana بوده — بدون نیاز به WSL، بدون مشکلات نسخه Rust/Anchor، و با ابزارهای بالغ‌تر (Hardhat). به همین دلیل، اپ Swap+Bridge روی زیرساخت EVM ساخته می‌شود.</div>
+</div>
+
+<div class="section">
+<h1>۲. وضعیت زیرساخت EVM (Base Sepolia)</h1>
+
+<h2>آدرس‌های قراردادها</h2>
+<table>
+<tr><th>قرارداد</th><th>آدرس</th><th>توضیح</th></tr>
+<tr><td>ETHERSAIR1986</td><td><code>0xdAc3533CAf83CFB01685Ac506C1519173E0B3eA3</code></td><td>توکن اصلی، الگوی Beacon Proxy</td></tr>
+<tr><td>WETHERSAIR1986</td><td><code>0x2187BA3eDF218Cb6F3c418e8c8a1Ab7Cb828EDd6</code></td><td>توکن دوم، همان الگوی EthersAirToken</td></tr>
+<tr><td>EthersAirStaking</td><td><code>0x43fE2e7E2cF2a43Bd4Ab2f800c6Ce1Ff06f65907</code></td><td>الگوی UUPS، ۱۲۵٪ APY ثابت</td></tr>
+<tr><td>Gnosis Safe (۲ از ۳)</td><td><code>0xE7f6A43A9FDaCc2257B7B611106f801e4562e1D8</code></td><td>مالتی‌سیگ ادمین (نقش‌ها همزمان روی deployer و Safe فعال است)</td></tr>
+<tr><td>MockWBTC</td><td><code>0xC4E7504EB0625D29DfFd09D7470d70FB0ab2FfC2</code></td><td>توکن تستی ۸ رقم اعشار، دارای faucet()</td></tr>
+<tr><td>EthersAirSwapPool #1</td><td><code>0x5a7870beCE60fC6E4ACadcE05f531bd4E33AA7a6</code></td><td>جفت ETHERSAIR1986 ⇄ WETHERSAIR1986 — دارای نقدینگی</td></tr>
+<tr><td>EthersAirSwapPool #2</td><td><code>0x5d55C5C759d439907c9deBe3E7b0eA77Cd20Ed0C</code></td><td>جفت ETHERSAIR1986 ⇄ mWBTC — دارای نقدینگی</td></tr>
+</table>
+
+<h2>فرانت‌اند Swap</h2>
+<p>یک فایل تک‌صفحه‌ای (<code>ethersair-swap.html</code>) با ethers.js v6 ساخته شده که موارد زیر را پشتیبانی می‌کند:</p>
+<ul>
+<li>اتصال به MetaMask و تشخیص/سوییچ خودکار شبکه Base Sepolia</li>
+<li>دو تب برای دو استخر (ETHERSAIR⇄WETHERSAIR و ETHERSAIR⇄mWBTC)</li>
+<li>محاسبه خودکار مقدار خروجی تخمینی از طریق <code>getAmountOut</code></li>
+<li>Approve خودکار و اجرای <code>swapExactTokensFor</code></li>
+<li>نمایش موجودی زنده و وضعیت reserve های استخر</li>
+</ul>
+
+<div class="note"><b>نکته اجرا:</b> این فایل باید از طریق یک سرور محلی (نه <code>file://</code>) باز شود، چون MetaMask روی فایل‌های محلی به‌طور پیش‌فرض غیرفعال است. یک سرور Node.js ساده (بدون وابستگی خارجی) برای این کار نوشته شده:</div>
+
+<pre>const http = require("http");
+const fs = require("fs");
+const path = require("path");
+const PORT = 3000;
+
+http.createServer((req, res) =&gt; {
+  let filePath = req.url === "/" ? "/ethersair-swap.html" : req.url;
+  filePath = path.join(__dirname, filePath);
+  fs.readFile(filePath, (err, data) =&gt; {
+    if (err) { res.writeHead(404); res.end("Not found"); return; }
+    const ext = path.extname(filePath);
+    const contentType = ext === ".html" ? "text/html" : "text/plain";
+    res.writeHead(200, { "Content-Type": contentType });
+    res.end(data);
+  });
+}).listen(PORT, () =&gt; console.log(`Server running at http://localhost:${PORT}`));</pre>
+
+<p>اجرا با: <code>node server.js</code> سپس باز کردن <code>http://localhost:3000</code> در همان پروفایل کروم که MetaMask روی آن نصب است.</p>
+
+<h2>قراردادهای آماده Deploy (نوشته شده، هنوز استفاده نشده)</h2>
+<table>
+<tr><th>فایل</th><th>کارکرد</th></tr>
+<tr><td><code>EthersAirBasketToken.sol</code></td><td>توکن سبدی (basket token) — در انتظار طراحی نهایی سبد دارایی</td></tr>
+</table>
+
+<h2>مسیرهای Deploy مهم (اسکریپت‌ها)</h2>
+<pre># توکن‌ها و استیکینگ (قبلا اجرا شده)
+npx hardhat run scripts/deployBeacon.js --network baseSepolia
+npx hardhat run scripts/deployStaking.js --network baseSepolia
+
+# Swap Pool ها (قبلا اجرا شده)
+npx hardhat run scripts/deployMockWBTC.js --network baseSepolia
+npx hardhat run scripts/deploySwapPool.js --network baseSepolia
+
+# انتقال مالکیت به Safe (قبلا اجرا شده — فقط GRANT، بدون renounce)
+npx hardhat run scripts/transferAdminToSafe.js --network baseSepolia</pre>
+
+<div class="note"><b>هشدار امنیتی یادآوری‌شده:</b> اسکریپت <code>renounceDeployerRoles.js</code> هنوز اجرا نشده. تا وقتی این اسکریپت اجرا نشود، هم کیف پول شخصی و هم Safe هر دو دسترسی ادمین دارند. renounce را فقط بعد از تایید کامل عملکرد Safe (مثلاً یک تراکنش آزمایشی موفق از طریق رابط Safe) اجرا کنید.</div>
+</div>
+
+<div class="section">
+<h1>۳. وضعیت Solana (Devnet)</h1>
+
+<h2>کیف پول و توکن</h2>
+<table>
+<tr><th>مورد</th><th>مقدار</th></tr>
+<tr><td>آدرس کیف پول فعال</td><td><code>3AHzgm91GGBiQzsKyZ1Xrxacic31D9oxUE2tMwzgVW2J</code></td></tr>
+<tr><td>موجودی SOL (زمان آخرین بررسی)</td><td>~۲.۰۹ SOL روی devnet</td></tr>
+<tr><td>آدرس Mint توکن SPL</td><td><code>DRXbVvpCuqV8xwfr13DqjkHpPJs3ENXFp8zSvmVBoEYG</code></td></tr>
+<tr><td>Decimals توکن</td><td>۹</td></tr>
+</table>
+
+<div class="note"><b>نکته مهم درباره Derivation Path:</b> یک seed phrase واحد، بسته به ابزار (Phantom در برابر <code>solana-keygen</code>)، می‌تواند آدرس‌های متفاوتی تولید کند. برای هماهنگی با Phantom (مسیر استاندارد <code>m/44'/501'/0'/0'</code>)، از دستور زیر استفاده شد:</div>
+<pre>solana-keygen recover -o ~/.config/solana/main-wallet.json 'prompt://?key=0/0'</pre>
+
+<h2>برنامه Staking با Anchor</h2>
+<table>
+<tr><th>مورد</th><th>مقدار</th></tr>
+<tr><td>Program ID</td><td><code>5cWRLbJ4Gu3N39CtD87imiWKfFnsJGvUuyXW12YhzTdf</code></td></tr>
+<tr><td>نسخه anchor-cli</td><td>۱.۱.۲</td></tr>
+<tr><td>نسخه solana-cli</td><td>۴.۱.۲ (Agave)</td></tr>
+<tr><td>APY پیکربندی‌شده</td><td>۱۲۵٪ (همسان با نسخه EVM)</td></tr>
+<tr><td>وضعیت Deploy</td><td class="status-done">موفق — روی devnet مستقر شده (296,712 بایت)</td></tr>
+</table>
+
+<h3>ساختار برنامه (src/)</h3>
+<ul>
+<li><code>state.rs</code> — دو struct: <code>StakePool</code> (اطلاعات استخر) و <code>UserStake</code> (اطلاعات هر کاربر)</li>
+<li><code>constants.rs</code> — seed ها، APY پیش‌فرض (۱۲۵۰۰ basis points)، ثابتهای محاسباتی</li>
+<li><code>instructions/initialize.rs</code> — راه‌اندازی استخر و vault</li>
+<li><code>instructions/stake.rs</code> — واریز توکن + محاسبه پاداش تجمعی (simple interest بر پایه ثانیه)</li>
+<li><code>instructions/unstake.rs</code> — خروج از استیک + تسویه پاداش معلق</li>
+<li><code>instructions/claim_reward.rs</code> — برداشت پاداش بدون خروج از استیک</li>
+</ul>
+
+<h3>فرمول محاسبه پاداش (مشابه بین Rust و Solidity)</h3>
+<pre>reward = staked_amount * apy_bps * elapsed_seconds / 10_000 / SECONDS_PER_YEAR</pre>
+
+<h2>وضعیت IDL روی زنجیره</h2>
+<p>ثبت IDL آنلاین (<code>anchor idl init</code>) به‌دلیل نیاز ابزار <code>@solana-program/program-metadata</code> به Node.js نسخه ۲۰+ (که در ابتدا نصب نبود) با خطا مواجه شد. این مشکل غیربحرانی است — فایل IDL محلی (<code>target/idl/ethersair_staking.json</code>) برای تست و فرانت‌اند کاملاً کافی است.</p>
+
+<h2>قدم‌های باقیمانده برای Solana</h2>
+<ol>
+<li>نصب کتابخانه‌های <code>@coral-xyz/anchor</code>, <code>@solana/web3.js</code>, <code>@solana/spl-token</code> (نسخه Node 20 لازم است)</li>
+<li>اجرای اسکریپت تست <code>initialize</code> برای ساخت استخر واقعی (نیازمند mint و vault)</li>
+<li>تست کامل <code>stake</code>, <code>unstake</code>, <code>claim_reward</code></li>
+<li>اتصال Phantom/Solflare به یک فرانت‌اند مشابه صفحه Swap موجود روی EVM</li>
+</ol>
+</div>
+
+<div class="section">
+<h1>۴. Bridge بین‌زنجیره‌ای با LayerZero V2</h1>
+
+<h2>معماری انتخاب‌شده</h2>
+<p>به‌جای ساخت یک بریج سفارشی، از استاندارد <b>OFT (Omnichain Fungible Token)</b> لایرزیرو استفاده می‌شود. چون ETHERSAIR1986 از قبل روی Base Sepolia دیپلوی و دارای موجودی/نقدینگی واقعی است، الگوی زیر انتخاب شد تا نیازی به مهاجرت توکن موجود نباشد:</p>
+
+<table>
+<tr><th>زنجیره</th><th>نوع قرارداد</th><th>کارکرد</th></tr>
+<tr><td>Base Sepolia <span class="chain-tag">مبدا</span></td><td>OFT Adapter</td><td>توکن‌های موجود ETHERSAIR1986 را قفل (lock) می‌کند</td></tr>
+<tr><td>Arbitrum Sepolia</td><td>OFT (mint/burn)</td><td>معادل توکن را در مقصد mint می‌کند</td></tr>
+<tr><td>Optimism Sepolia</td><td>OFT (mint/burn)</td><td>همان کارکرد Arbitrum</td></tr>
+</table>
+
+<h2>اطلاعات فنی LayerZero V2</h2>
+<table>
+<tr><th>زنجیره</th><th>Endpoint ID (eid)</th><th>آدرس Endpoint (یکسان در همه زنجیره‌های EVM)</th></tr>
+<tr><td>Base Sepolia</td><td>40245</td><td rowspan="3"><code>0x6EDCE65403992e310A62460808c4b910D972f10f</code></td></tr>
+<tr><td>Arbitrum Sepolia</td><td>40231</td></tr>
+<tr><td>Optimism Sepolia</td><td>40232</td></tr>
+</table>
+
+<h2>وضعیت فعلی پیاده‌سازی</h2>
+<ul>
+<li class="status-done">✅ پکیج‌های <code>@layerzerolabs/lz-evm-oapp-v2</code> و <code>@layerzerolabs/oapp-evm</code> نصب شدند (با <code>--legacy-peer-deps</code> به دلیل تضاد نسخه ethers v5/v6)</li>
+<li class="status-progress">🟡 رفع مشکل نصب ناقص وابستگی‌های Hardhat toolbox بعد از نصب LayerZero</li>
+<li class="status-todo">⬜ نوشتن <code>EthersAirOFTAdapter.sol</code> (روی Base Sepolia)</li>
+<li class="status-todo">⬜ نوشتن <code>EthersAirOFT.sol</code> (روی Arbitrum و Optimism Sepolia)</li>
+<li class="status-todo">⬜ Deploy روی هر سه شبکه</li>
+<li class="status-todo">⬜ اتصال (wiring) با <code>setPeer</code> بین سه قرارداد</li>
+<li class="status-todo">⬜ تست انتقال واقعی بین چین‌ها</li>
+</ul>
+
+<h2>نصب پکیج‌ها (مرجع دستورات)</h2>
+<pre>cd C:\Users\reza\defender-project
+npm install @layerzerolabs/lz-evm-oapp-v2 @layerzerolabs/oapp-evm --save --legacy-peer-deps
+
+# در صورت خرابی وابستگی‌های Hardhat بعد از این نصب:
+npm install --save-dev "@nomicfoundation/hardhat-chai-matchers@^2.0.0" ^
+  "@nomicfoundation/hardhat-ignition-ethers@^0.15.0" ^
+  "@nomicfoundation/hardhat-network-helpers@^1.0.0" ^
+  "@typechain/ethers-v6@^0.5.0" "@typechain/hardhat@^9.0.0" ^
+  "@types/chai@^4.2.0" "@types/mocha@>=9.1.0" "chai@^4.2.0" ^
+  "hardhat-gas-reporter@^1.0.8" "solidity-coverage@^0.8.1" ^
+  "typechain@^8.3.0" --legacy-peer-deps
+
+npx hardhat compile</pre>
+
+<div class="note"><b>درس گرفته‌شده:</b> استفاده از <code>--legacy-peer-deps</code> باعث می‌شود npm دیگر peer dependency های اختیاری (مثل ابزارهای جانبی Hardhat toolbox) را خودکار نصب نکند. اگر بعد از این فلگ خطای <code>HH801</code> دیدید، پکیج‌های گفته‌شده در پیام خطا را دستی و با همان فلگ نصب کنید.</div>
+</div>
+
+<div class="section">
+<h1>۵. راهاندازی کامل محیط WSL2/Ubuntu برای توسعه Solana</h1>
+
+<h2>۵.۱ نصب WSL2 (نه WSL1!)</h2>
+<div class="note"><b>هشدار حیاتی:</b> اگر <code>wsl -l -v</code> نسخه <code>1</code> نشان دهد، باینری‌های لینوکسی ازجمله Node.js با خطای <code>Exec format error</code> شکست می‌خورند. حتماً قبل از هر کاری این را بررسی کنید.</div>
+<pre># در CMD (Administrator):
+dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart
+wsl --set-version Ubuntu 2
+wsl -l -v   # باید VERSION = 2 نشان دهد</pre>
+
+<p>اگر <code>wsl --install</code> به‌دلیل مسدودی <code>aka.ms</code> با timeout مواجه شد، نصب دستی:</p>
+<pre>msiexec /i wsl_update_x64.msi
+curl -L -o ubuntu-rootfs.tar.gz https://cloud-images.ubuntu.com/wsl/releases/22.04/current/ubuntu-jammy-wsl-amd64-wsl.rootfs.tar.gz
+wsl --import Ubuntu C:\WSL\Ubuntu .\ubuntu-rootfs.tar.gz</pre>
+
+<h2>۵.۲ رفع مشکل DNS در WSL</h2>
+<p>ISP در برخی موارد DNS را hijack می‌کند. رفع دائمی:</p>
+<pre># /etc/wsl.conf باید شامل این بخش باشد:
+[network]
+generateResolvConf = false
+
+# سپس دستی بنویسید:
+sudo bash -c 'echo "nameserver 1.1.1.1" > /etc/resolv.conf'
+sudo bash -c 'echo "nameserver 8.8.8.8" >> /etc/resolv.conf'</pre>
+<p>بعد از تغییر <code>wsl.conf</code>، لازم است از CMD ویندوز اجرا شود: <code>wsl --shutdown</code> و سپس دوباره <code>wsl -d Ubuntu</code>.</p>
+
+<h2>۵.۳ نصب Rust</h2>
+<pre>curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+# نسخه نهایی تاییدشده: rustc 1.97.1, cargo 1.97.1
+# نسخه apt (rustc 1.75.0) قدیمی است و با خطای Cargo.lock v4 مواجه می‌شود — حذف شود:
+sudo apt remove -y rustc cargo</pre>
+
+<h2>۵.۴ نصب Solana CLI و Platform Tools</h2>
+<p><code>release.solana.com</code> در محیط این پروژه مسدود بود. راهحل: دانلود مستقیم از GitHub (Agave):</p>
+<pre>curl -s https://api.github.com/repos/anza-xyz/agave/releases/latest | grep tag_name
+curl -L --retry 5 "https://github.com/anza-xyz/agave/releases/download/v4.1.2/solana-release-x86_64-unknown-linux-gnu.tar.bz2" -o solana-release.tar.bz2
+mkdir -p ~/solana-agave-install
+tar -xjf solana-release.tar.bz2 -C ~/solana-agave-install
+echo 'export PATH="$HOME/solana-agave-install/solana-release/bin:$PATH"' >> ~/.bashrc</pre>
+<div class="note">نصب معمول <code>cargo install solana-cli</code> فقط CLI را نصب می‌کند، نه <code>cargo-build-sbf</code> که برای کامپایل برنامه‌های Anchor لازم است. دانلود از GitHub این مشکل را حل می‌کند.</div>
+
+<h2>۵.۵ نصب Anchor</h2>
+<pre># روش AVM (ممکن است با GitHub API timeout مواجه شود):
+cargo install --git https://github.com/coral-xyz/anchor avm --locked --force
+avm install latest
+
+# روش جایگزین مطمئن‌تر (مستقیم از crates.io):
+cargo install anchor-cli --locked --force</pre>
+<div class="note"><b>خطای فضای دیسک:</b> اگر <code>No space left on device</code> دیدید، پاکسازی کنید: <code class="ltr">rm -rf /tmp/cargo-install*</code> و <code class="ltr">rm -rf ~/.cargo/registry/cache/*</code></div>
+
+<h2>۵.۶ نصب Node.js نسخه مناسب</h2>
+<p>نسخه apt پیش‌فرض (v12) با ابزارهای جدید ناسازگار است. از nvm استفاده شود:</p>
+<pre>curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+source ~/.bashrc
+nvm install 20
+nvm use 20
+npm install -g yarn</pre>
+</div>
+
+<div class="section">
+<h1>۶. مشکلات شبکه و راهحل‌های دائمی</h1>
+
+<h2>پروکسی Psiphon — نکته حیاتی</h2>
+<p>IP محلی پروکسی Psiphon با هر بار قطع/وصل شدن تغییر می‌کند. همیشه قبل از هر عملیات شبکه‌ای در WSL:</p>
+<ol>
+<li>در برنامه Psiphon، به تب <b>Logs</b> بروید</li>
+<li>آخرین (پایین‌ترین) خط با الگوی <code>HTTP proxy is running on 192.168.x.x port 8080</code> را پیدا کنید (آدرس‌های <code>169.254.x.x</code> را نادیده بگیرید)</li>
+<li>در WSL export کنید:</li>
+</ol>
+<pre>export http_proxy="http://IP_فعلی:8080"
+export https_proxy="http://IP_فعلی:8080"
+export HTTP_PROXY="http://IP_فعلی:8080"
+export HTTPS_PROXY="http://IP_فعلی:8080"</pre>
+
+<h2>پروکسی برای npm (ویندوز، خارج از WSL)</h2>
+<pre>npm config set proxy http://IP_فعلی:8080
+npm config set https-proxy http://IP_فعلی:8080</pre>
+
+<h2>پروکسی برای apt</h2>
+<pre>sudo bash -c 'cat > /etc/apt/apt.conf.d/95proxy << EOF
+Acquire::http::Proxy "http://IP_فعلی:8080";
+Acquire::https::Proxy "http://IP_فعلی:8080";
+EOF'</pre>
+
+<h2>دامنه‌های تاییدشده کار می‌کنند (بدون مشکل فیلترینگ)</h2>
+<ul>
+<li><code>github.com</code>, <code>api.github.com</code>, <code>raw.githubusercontent.com</code></li>
+<li><code>archive.ubuntu.com</code> (با پروکسی apt)</li>
+<li><code>registry.npmjs.org</code> (فقط با پروکسی صریح، هم در WSL و هم در ویندوز)</li>
+</ul>
+
+<h2>دامنه‌های مشکل‌دار</h2>
+<ul>
+<li><code>release.solana.com</code>, <code>aka.ms</code>, <code>sh.rustup.rs</code> (بدون پروکسی) — راهحل: پروکسی یا دانلود مستقیم از GitHub</li>
+<li><code>deb.nodesource.com</code> — همیشه ۴۰۳ می‌دهد؛ از apt یا nvm استفاده شود</li>
+</ul>
+
+<h2>RPC های بلاکچین در حال استفاده</h2>
+<table>
+<tr><th>شبکه</th><th>ارائهدهنده</th></tr>
+<tr><td>Base Sepolia</td><td>GetBlock (<code class="ltr">https://go.getblock.io/...</code>)</td></tr>
+<tr><td>Arbitrum Sepolia</td><td>Alchemy</td></tr>
+<tr><td>Optimism Sepolia</td><td>Alchemy</td></tr>
+<tr><td>Solana Devnet</td><td>RPC عمومی (<code class="ltr">api.devnet.solana.com</code>) — کند، پیشنهاد: مهاجرت به Helius</td></tr>
+</table>
+</div>
+
+<div class="section">
+<h1>۷. قدم‌های بعدی پیشنهادی</h1>
+
+<h3>اولویت فوری</h3>
+<ol>
+<li>تکمیل نصب و کامپایل موفق پکیجهای LayerZero در پروژه Hardhat</li>
+<li>نوشتن و دیپلوی <code>EthersAirOFTAdapter.sol</code> (Base) و <code>EthersAirOFT.sol</code> (Arbitrum/Optimism)</li>
+<li>Wiring بین سه چین و تست یک انتقال واقعی</li>
+</ol>
+
+<h3>اولویت میان‌مدت</h3>
+<ol>
+<li>تکمیل تست کامل instruction های Solana (initialize, stake, unstake, claim_reward) از طریق اسکریپت Node.js</li>
+<li>ساخت فرانت‌اند مشابه برای Solana (اتصال Phantom)</li>
+<li>Deploy پول سوم Swap برای basket token</li>
+</ol>
+
+<h3>اولویت بلندمدت</h3>
+<ol>
+<li>مهاجرت RPC Solana به Helius برای پایداری بهتر</li>
+<li>بررسی راه‌اندازی بلاکچین اختصاصی EthersAir به‌عنوان Appchain سازگار با EVM</li>
+<li>اجرای <code>renounceDeployerRoles.js</code> پس از تایید کامل عملکرد Safe</li>
+<li>گسترش Bridge به Bitcoin، Sui، Aptos، Tron</li>
+</ol>
+
+<p style="margin-top:40px; color:#999; font-size:11px; text-align:center;">— پایان گزارش —</p>
+</div>
+
+</body>
+</html>

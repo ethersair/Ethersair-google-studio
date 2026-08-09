@@ -53,6 +53,7 @@ import './index.css';
 import { ethers } from 'ethers';
 import { Presentation, Play, Trash2, LogOut, FileText, FileSpreadsheet, FolderOpen, Database, Terminal, Key, Eye, EyeOff, ShieldCheck, Calendar, CheckSquare, FileQuestion, ListTodo } from 'lucide-react';
 import { WalletProvider, useWallet, Toast } from './WalletContext';
+import { EthersAirSwapPanel } from './EthersAirSwapPanel';
 import { 
   initAuth, 
   googleSignIn, 
@@ -121,6 +122,7 @@ interface Token {
   balance: number;
   logo: string;
   color: string;
+  address?: string;
   totalSupply?: number;
 }
 
@@ -210,6 +212,61 @@ export interface LiquidityPool {
 
 const CHAINS: Chain[] = [
   {
+    id: 'base-sepolia',
+    name: 'Base Sepolia (EVM)',
+    symbol: 'ETH',
+    color: '#0052FF',
+    glowColor: 'rgba(0, 82, 255, 0.4)',
+    bgGradient: 'from-blue-700/20 via-slate-950 to-slate-950',
+    gasPrice: '0.05 Gwei',
+    explorer: 'https://sepolia.basescan.org/tx/',
+    icon: '🔵',
+    tokens: [
+      { 
+        symbol: 'ETHERSAIR', 
+        name: 'ETHERSAIR1986', 
+        price: 1.00, 
+        priceChange24h: 18.50, 
+        balance: 10000.00, 
+        logo: 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68c77814775ee0229ccf8e02/08e70c173_logo.png', 
+        color: '#0052FF', 
+        address: '0xdAc3533CAf83CFB01685Ac506C1519173E0B3eA3', 
+        totalSupply: 100000000 
+      },
+      { 
+        symbol: 'WETHERSAIR', 
+        name: 'WETHERSAIR1986', 
+        price: 1.00, 
+        priceChange24h: 18.50, 
+        balance: 10000.00, 
+        logo: 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68c77814775ee0229ccf8e02/08e70c173_logo.png', 
+        color: '#3B82F6', 
+        address: '0x2187BA3eDF218Cb6F3c418e8c8a1Ab7Cb828EDd6', 
+        totalSupply: 100000000 
+      },
+      { 
+        symbol: 'mWBTC', 
+        name: 'MockWBTC', 
+        price: 65000.00, 
+        priceChange24h: 3.20, 
+        balance: 0.50, 
+        logo: '₿', 
+        color: '#F7931A', 
+        address: '0xC4E7504EB0625D29DfFd09D7470d70FB0ab2FfC2', 
+        totalSupply: 21000000 
+      },
+      { 
+        symbol: 'ETH', 
+        name: 'Base Sepolia ETH', 
+        price: 3450.25, 
+        priceChange24h: 2.45, 
+        balance: 1.25, 
+        logo: 'Ξ', 
+        color: '#627EEA' 
+      },
+    ]
+  },
+  {
     id: 'ethereum',
     name: 'Ethereum',
     symbol: 'ETH',
@@ -221,13 +278,12 @@ const CHAINS: Chain[] = [
     icon: 'Ξ',
     tokens: [
       { symbol: 'ETH', name: 'Ethereum', price: 3450.25, priceChange24h: 2.45, balance: 1.45, logo: 'Ξ', color: '#627EEA' },
-      { symbol: 'EAIR', name: "Ether's Air", price: 0.91, priceChange24h: 12.50, balance: 4000.00, logo: 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68c77814775ee0229ccf8e02/08e70c173_logo.png', color: '#6366F1', totalSupply: 60000000 },
-      { symbol: 'WEAIR', name: "W Ether's Air", price: 0.91, priceChange24h: 12.50, balance: 4000.00, logo: 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68c77814775ee0229ccf8e02/08e70c173_logo.png', color: '#818CF8', totalSupply: 60000000 },
+      { symbol: 'EAIR', name: "Ether's Air", price: 0.91, priceChange24h: 12.50, balance: 4000.00, logo: 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68c77814775ee0229ccf8e02/08e70c173_logo.png', color: '#6366F1', address: '0xdAc3533CAf83CFB01685Ac506C1519173E0B3eA3', totalSupply: 60000000 },
+      { symbol: 'WEAIR', name: "W Ether's Air", price: 0.91, priceChange24h: 12.50, balance: 4000.00, logo: 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68c77814775ee0229ccf8e02/08e70c173_logo.png', color: '#818CF8', address: '0x2187BA3eDF218Cb6F3c418e8c8a1Ab7Cb828EDd6', totalSupply: 60000000 },
+      { symbol: 'mWBTC', name: 'MockWBTC', price: 65000.00, priceChange24h: 3.20, balance: 0.50, logo: '₿', color: '#F7931A', address: '0xC4E7504EB0625D29DfFd09D7470d70FB0ab2FfC2', totalSupply: 21000000 },
       { symbol: 'E33R', name: "E33R", price: 1.25, priceChange24h: 8.40, balance: 4000.00, logo: 'E33R', color: '#EC4899', totalSupply: 60000000 },
       { symbol: 'USDT', name: 'Tether USD', price: 1.00, priceChange24h: 0.01, balance: 1250.00, logo: '$', color: '#26A17B' },
       { symbol: 'USDC', name: 'USD Coin', price: 1.00, priceChange24h: -0.02, balance: 740.00, logo: 'C', color: '#2775CA' },
-      { symbol: 'LINK', name: 'Chainlink', price: 18.75, priceChange24h: 5.12, balance: 45.00, logo: 'L', color: '#375BD2' },
-      { symbol: 'UNI', name: 'Uniswap', price: 7.85, priceChange24h: -1.34, balance: 20.00, logo: 'U', color: '#FF007A' },
     ]
   },
   {
@@ -336,7 +392,7 @@ const CHAINS: Chain[] = [
 ];
 
 const INITIAL_STAKING_POOLS: StakingPool[] = [
-  { id: 'ethersair-staking', tokenSymbol: 'ETH', poolName: 'ETHERS AIR Native Staking', apy: 15.80, staked: 0, rewards: 0, chain: 'ethereum' },
+  { id: 'ethersair-staking', tokenSymbol: 'ETHERSAIR', poolName: 'EthersAirStaking (125% APY)', apy: 125.00, staked: 0, rewards: 0, chain: 'base-sepolia' },
   { id: 'eth-liquid', tokenSymbol: 'ETH', poolName: 'Lido staked ETH (stETH)', apy: 3.82, staked: 0, rewards: 0, chain: 'ethereum' },
   { id: 'sol-liquid', tokenSymbol: 'SOL', poolName: 'Jito staked SOL (JitoSOL)', apy: 6.45, staked: 0, rewards: 0, chain: 'solana' },
   { id: 'pol-staking', tokenSymbol: 'POL', poolName: 'Validator Native Staking', apy: 5.10, staked: 0, rewards: 0, chain: 'polygon' },
@@ -345,6 +401,9 @@ const INITIAL_STAKING_POOLS: StakingPool[] = [
 ];
 
 const INITIAL_LIQUIDITY_POOLS: LiquidityPool[] = [
+  // Base Sepolia (EVM) EthersAir Pools
+  { id: 'pool-ethersair-wethersair', chain: 'base-sepolia', tokenASymbol: 'ETHERSAIR', tokenBSymbol: 'WETHERSAIR', tokenAAmount: 500000, tokenBAmount: 500000, apy: 45.20, volume24h: 850000, myShare: 0, myLiquidityA: 0, myLiquidityB: 0, myRewards: 0 },
+  { id: 'pool-ethersair-mwbtc', chain: 'base-sepolia', tokenASymbol: 'ETHERSAIR', tokenBSymbol: 'mWBTC', tokenAAmount: 1300000, tokenBAmount: 20, apy: 88.60, volume24h: 1250000, myShare: 0, myLiquidityA: 0, myLiquidityB: 0, myRewards: 0 },
   // Ethereum
   { id: 'eth-usdc', chain: 'ethereum', tokenASymbol: 'ETH', tokenBSymbol: 'USDC', tokenAAmount: 1200, tokenBAmount: 4140000, apy: 14.50, volume24h: 3200000, myShare: 0, myLiquidityA: 0, myLiquidityB: 0, myRewards: 0 },
   { id: 'eth-eair', chain: 'ethereum', tokenASymbol: 'ETH', tokenBSymbol: 'EAIR', tokenAAmount: 850, tokenBAmount: 3220000, apy: 32.40, volume24h: 1500000, myShare: 0, myLiquidityA: 0, myLiquidityB: 0, myRewards: 0 },
@@ -1655,6 +1714,7 @@ export default function App() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [livePricesMultiplier, setLivePricesMultiplier] = useState<number>(1.0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
+  const [showBloggerModal, setShowBloggerModal] = useState<boolean>(false);
 
   // References
   const autoPriceInterval = useRef<NodeJS.Timeout | null>(null);
@@ -2936,6 +2996,119 @@ export default function App() {
         ))}
       </div>
 
+      {/* BLOGGER PUBLICATION MODAL */}
+      {showBloggerModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4 overflow-y-auto">
+          <div className="relative w-full max-w-3xl rounded-3xl border border-amber-500/40 bg-slate-900 p-6 md:p-8 shadow-2xl space-y-6 text-right" dir="rtl">
+            
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+              <div className="flex items-center gap-3">
+                <img src="/ethersair_logo.jpg" alt="EthersAir" className="w-12 h-12 rounded-xl object-cover border border-amber-400/50 shadow-md shadow-amber-500/20" />
+                <div>
+                  <h3 className="text-lg font-black text-white">راهنمای انتشار برنامه EthersAir روی Blogspot</h3>
+                  <p className="text-xs text-amber-400 font-mono dir-ltr text-right">ethersairswapp.blogspot.com</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowBloggerModal(false)}
+                className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Body Explanation */}
+            <div className="space-y-4 text-xs md:text-sm text-slate-300 leading-relaxed">
+              <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 font-bold flex items-start gap-3">
+                <Check className="w-5 h-5 shrink-0 text-emerald-400 mt-0.5" />
+                <div>
+                  <strong>بله، کاملاً امکان‌پذیر است!</strong> شما می‌توانید این پلتفرم سواپ و دپ Web3 را به شکل زنده و مستقیم روی وبلاگ بلاگ‌اسپات خود به آدرس <code className="text-amber-300 font-mono dir-ltr">ethersairswapp.blogspot.com</code> منتشر و اجرا کنید.
+                </div>
+              </div>
+
+              <h4 className="font-extrabold text-white text-base border-b border-slate-800 pb-1">مراحل انتشار قدم به قدم:</h4>
+
+              <ol className="space-y-3 list-decimal list-inside text-slate-300">
+                <li className="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800">
+                  <strong className="text-amber-300">گام ۱ (آدرس اپلیکیشن):</strong> آدرس اینترنتی (URL) این برنامه را کپی کنید. برای مثال آدرس فعال فعلی:
+                  <div className="mt-1 font-mono text-xs bg-slate-900 text-indigo-300 p-2 rounded border border-indigo-500/30 dir-ltr text-left">
+                    https://ais-dev-qzlbds5c2rvbeehmpmzh7v-440897460154.europe-west1.run.app
+                  </div>
+                </li>
+
+                <li className="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800">
+                  <strong className="text-amber-300">گام ۲ (ورود به پنل Blogger):</strong> وارد پنل مدیریت <code className="font-mono text-white">blogger.com</code> شوید و وبلاگ <code className="font-mono text-amber-400 dir-ltr">ethersairswapp.blogspot.com</code> را انتخاب کنید.
+                </li>
+
+                <li className="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800">
+                  <strong className="text-amber-300">گام ۳ (ایجاد برگه یا پست جدید):</strong> از منوی سمت راست روی <strong>Pages (برگه‌ها)</strong> یا <strong>Posts (پست‌ها)</strong> کلیک کرده و یک برگه جدید با عنوان <code className="font-mono text-white">EthersAir Multi-Chain DEX & Staking</code> بسازید.
+                </li>
+
+                <li className="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800">
+                  <strong className="text-amber-300">گام ۴ (تغییر به حالت HTML View):</strong> روی آیکون مداد در بالای سمت چپ ویرایشگر بلاگ‌اسپات کلیک کرده و حالت را از Compose View به <strong>HTML View</strong> تغییر دهید.
+                </li>
+
+                <li className="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800">
+                  <strong className="text-amber-300">گام ۵ (پیست کردن کد Embed iFrame):</strong> کد زیر را کپی کرده و دقیقاً داخل ویرایشگر HTML پیست کنید:
+                  
+                  <div className="mt-2 relative">
+                    <pre className="bg-slate-950 text-amber-300 p-3 rounded-lg font-mono text-xs overflow-x-auto border border-amber-500/30 dir-ltr text-left">
+{`<style>
+  .ethersair-app-frame {
+    width: 100%;
+    height: 900px;
+    border: none;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  }
+</style>
+
+<iframe 
+  src="https://ais-dev-qzlbds5c2rvbeehmpmzh7v-440897460154.europe-west1.run.app" 
+  class="ethersair-app-frame"
+  allow="clipboard-write; ethereum; wallet"
+  loading="lazy">
+</iframe>`}
+                    </pre>
+                    <button
+                      onClick={() => {
+                        const iframeCode = `<style>\n  .ethersair-app-frame {\n    width: 100%;\n    height: 900px;\n    border: none;\n    border-radius: 16px;\n    box-shadow: 0 10px 30px rgba(0,0,0,0.5);\n  }\n</style>\n\n<iframe \n  src="https://ais-dev-qzlbds5c2rvbeehmpmzh7v-440897460154.europe-west1.run.app" \n  class="ethersair-app-frame"\n  allow="clipboard-write; ethereum; wallet"\n  loading="lazy">\n</iframe>`;
+                        navigator.clipboard.writeText(iframeCode);
+                        addToast('کد کپی شد!', 'کد iFrame برای انتشار روی Blogspot کپی شد', 'success');
+                      }}
+                      className="absolute top-2 left-2 bg-amber-500 text-slate-950 font-extrabold text-[10px] px-2.5 py-1 rounded hover:bg-amber-400 transition"
+                    >
+                      کپی کد HTML
+                    </button>
+                  </div>
+                </li>
+
+                <li className="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800">
+                  <strong className="text-amber-300">گام ۶ (انتشار و تست زنده):</strong> دکمه Publish را بزنید. تمام! حالا کاربران روی آدرس <code className="text-amber-400 font-mono dir-ltr">ethersairswapp.blogspot.com</code> می‌توانند مستقیم به MetaMask/Phantom متصل شوند و سواپ و استیکینگ را انجام دهند.
+                </li>
+              </ol>
+
+              {/* Tips Note */}
+              <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-200">
+                <strong>💡 چرا iFrame بهترین روش برای Blogspot است؟</strong> زیرا سیستم قالب‌بندی Blogger کدهای سنگین JavaScript را دستکاری یا سانسور می‌کند. اما با <code className="font-mono text-white">iframe</code>، افزونه‌های Web3 مانند MetaMask و Phantom بدون هیچ محدودیتی کار می‌کنند.
+              </div>
+            </div>
+
+            {/* Footer button */}
+            <div className="flex justify-end pt-2 border-t border-white/10">
+              <button
+                onClick={() => setShowBloggerModal(false)}
+                className="px-6 py-2.5 rounded-xl bg-amber-500 text-slate-950 font-black text-xs hover:bg-amber-400 transition"
+              >
+                متوجه شدم (بستن)
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
       {/* CONNECT WALLET MODAL */}
       {showConnectModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
@@ -3058,13 +3231,26 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           
           {/* Logo & Brand */}
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-              <Zap className="w-5 h-5 text-white" />
+          <div 
+            className="flex items-center gap-3 cursor-pointer group"
+            onClick={() => setActiveTab('overview')}
+          >
+            <div className="relative">
+              <img 
+                src="/ethersair_logo.jpg" 
+                alt="EthersAir Emblem" 
+                className="w-10 h-10 rounded-xl object-cover border border-amber-500/50 shadow-lg shadow-amber-500/25 group-hover:scale-105 transition duration-300"
+              />
+              <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
+              </span>
             </div>
             <div>
-              <span className="text-lg font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-100 to-slate-400">ETHERS AIR</span>
-              <span className="block text-[10px] text-indigo-400 font-bold tracking-widest uppercase">Multi-Chain Portal</span>
+              <span className="text-lg font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-amber-200 via-amber-400 to-yellow-500">ETHERS AIR</span>
+              <span className="block text-[10px] text-amber-400 font-bold tracking-widest uppercase flex items-center gap-1">
+                Multi-Chain Portal <span className="text-[9px] bg-amber-500/20 text-amber-300 px-1 py-0.2 rounded font-mono">v2.4</span>
+              </span>
             </div>
           </div>
 
@@ -3165,6 +3351,17 @@ export default function App() {
                 </div>
               </div>
             </div>
+
+            {/* Blogspot Publication Guide Button */}
+            <button
+              id="blogspot-guide-header-btn"
+              onClick={() => setShowBloggerModal(true)}
+              className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-xs font-bold text-amber-300 transition"
+              title="راهنمای انتشار روی Blogspot"
+            >
+              <Globe className="w-3.5 h-3.5 text-amber-400" />
+              <span>انتشار روی Blogspot</span>
+            </button>
 
             {/* Dynamic Chain Dropdown */}
             <div className="relative group">
@@ -3476,7 +3673,90 @@ export default function App() {
 
         {/* ----------------- TAB: OVERVIEW ----------------- */}
         {activeTab === 'overview' && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="space-y-6">
+            
+            {/* ETHERSAIR MAIN ENTRY HERO BANNER */}
+            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-950 via-slate-900 to-amber-950/40 border border-amber-500/30 p-6 md:p-8 shadow-2xl">
+              {/* Background ambient lighting */}
+              <div className="absolute top-0 left-1/4 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+              <div className="absolute bottom-0 right-10 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+
+              <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-8">
+                {/* Left Side: Brand Logo & Title */}
+                <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-6">
+                  {/* High-res Gold Emblem Logo Image */}
+                  <div className="relative group shrink-0">
+                    <div className="absolute -inset-1 bg-gradient-to-r from-amber-500 to-yellow-600 rounded-2xl blur opacity-40 group-hover:opacity-75 transition duration-500" />
+                    <img 
+                      src="/ethersair_logo.jpg" 
+                      alt="EthersAir Emblem" 
+                      className="relative w-28 h-28 md:w-32 md:h-32 rounded-2xl object-cover border-2 border-amber-400/50 shadow-2xl shadow-amber-500/30 group-hover:scale-105 transition duration-300"
+                    />
+                    <div className="absolute -bottom-2 -right-2 bg-slate-950 border border-amber-500/50 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold text-amber-400 shadow">
+                      VERIFIED
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-bold">
+                      <Zap className="w-3.5 h-3.5 text-amber-400" />
+                      خوش آمدید به EthersAir Multi-Chain DeFi
+                    </div>
+                    
+                    <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight">
+                      پلتفرم سواپ، استیکینگ و بریج بین‌زنجیره‌ای <span className="bg-clip-text text-transparent bg-gradient-to-r from-amber-200 via-amber-400 to-yellow-500">EthersAir</span>
+                    </h1>
+                    
+                    <p className="text-xs md:text-sm text-slate-300 max-w-2xl leading-relaxed">
+                      زیرساخت غیرمتمرکز EthersAir فعال روی شبکه <strong>Base Sepolia EVM</strong> (استخرهای سواپ و استیکینگ ۱۲۵٪ APY)، برنامه استیکینگ <strong>Solana Devnet</strong>، و بریج بین‌زنجیره‌ای <strong>LayerZero V2</strong>.
+                    </p>
+
+                    {/* Active Contract Badges */}
+                    <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 pt-2 text-[11px] font-mono">
+                      <span className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 px-2.5 py-1 rounded-lg font-semibold flex items-center gap-1">
+                        <Check className="w-3 h-3" /> ETHERSAIR1986 Active
+                      </span>
+                      <span className="bg-blue-500/10 border border-blue-500/30 text-blue-400 px-2.5 py-1 rounded-lg font-semibold">
+                        Base Sepolia ID: 84532
+                      </span>
+                      <span className="bg-purple-500/10 border border-purple-500/30 text-purple-300 px-2.5 py-1 rounded-lg font-semibold">
+                        Solana Staking Anchor
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Side: Quick Action Buttons & Blogger Guide trigger */}
+                <div className="flex flex-col sm:flex-row lg:flex-col gap-3 w-full sm:w-auto shrink-0">
+                  <button
+                    onClick={() => setActiveTab('ethersair')}
+                    className="px-5 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 hover:to-yellow-500 text-slate-950 font-black text-xs shadow-lg shadow-amber-500/20 transition flex items-center justify-center gap-2"
+                  >
+                    <Zap className="w-4 h-4 fill-slate-950" />
+                    ورود به نود سواپ EthersAir DEX
+                  </button>
+
+                  <button
+                    onClick={() => setActiveTab('bridge')}
+                    className="px-5 py-3 rounded-xl bg-slate-900 border border-slate-700 hover:border-amber-500/50 text-white font-bold text-xs transition flex items-center justify-center gap-2"
+                  >
+                    <Globe className="w-4 h-4 text-blue-400" />
+                    بریج بین‌زنجیره‌ای LayerZero
+                  </button>
+
+                  <button
+                    onClick={() => setShowBloggerModal(true)}
+                    className="px-5 py-3 rounded-xl bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 text-amber-300 font-bold text-xs transition flex items-center justify-center gap-2"
+                  >
+                    <FileText className="w-4 h-4 text-amber-400" />
+                    راهنمای انتشار روی blogspot.com ↗
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* MAIN OVERVIEW GRID */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
             {/* PORTFOLIO GROWTH AREA CHART */}
             <div className="lg:col-span-2 rounded-2xl glass-card p-5">
@@ -3841,6 +4121,7 @@ export default function App() {
             </div>
 
           </div>
+          </div>
         )}
 
         {/* ----------------- TAB: SWAP ----------------- */}
@@ -3871,8 +4152,54 @@ export default function App() {
             setPoolDepositAmountA(calculated.toFixed(4));
           };
 
+          // Render EthersAir Swap Panel if Base Sepolia chain is selected or by default
+          if (selectedChainId === 'base-sepolia') {
+            return (
+              <div className="max-w-4xl mx-auto space-y-6">
+                <EthersAirSwapPanel
+                  connected={connected}
+                  walletAddress={walletAddress}
+                  isRealWallet={isRealWallet}
+                  addToast={addToast}
+                  setShowConnectModal={setShowConnectModal}
+                  onSwapSuccess={(tx) => {
+                    const newTx: Transaction = {
+                      id: Math.random().toString(36).substring(2, 9),
+                      type: 'swap',
+                      chain: 'Base Sepolia',
+                      details: tx.details,
+                      amount: tx.amount,
+                      status: 'completed',
+                      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                      txHash: tx.hash
+                    };
+                    setTransactions(prev => [newTx, ...prev]);
+                  }}
+                />
+              </div>
+            );
+          }
+
           return (
-            <div className={`${swapSubTab === 'swap' ? 'max-w-md' : 'max-w-4xl'} mx-auto rounded-2xl glass-card p-6 shadow-2xl relative transition-all duration-300`}>
+            <div className="space-y-6 max-w-4xl mx-auto">
+              {/* EthersAir Feature Banner in Multi-Chain Swap */}
+              <div className="p-4 rounded-xl bg-blue-950/40 border border-blue-500/30 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <span className="text-xl">🔵</span>
+                  <div>
+                    <h5 className="font-bold text-xs text-white">EthersAir Base Sepolia DEX Operational</h5>
+                    <p className="text-[11px] text-slate-400">Pool #1 (ETHERSAIR⇄WETHERSAIR) & Pool #2 (ETHERSAIR⇄mWBTC) Ready</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSelectedChainId('base-sepolia')}
+                  className="px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white transition shrink-0"
+                >
+                  Switch to Base Sepolia DEX
+                </button>
+              </div>
+
+              <div className={`${swapSubTab === 'swap' ? 'max-w-md' : 'max-w-4xl'} mx-auto rounded-2xl glass-card p-6 shadow-2xl relative transition-all duration-300`}>
               
               {/* Segmented Sub-Tab Switcher */}
               <div className="flex bg-slate-900/60 p-1 rounded-xl border border-slate-800/80 mb-6">
@@ -4459,6 +4786,7 @@ export default function App() {
                 </div>
               )}
             </div>
+          </div>
           );
         })()}
 
@@ -5054,6 +5382,28 @@ export default function App() {
         {/* ----------------- TAB: ETHERSAIR ----------------- */}
         {activeTab === 'ethersair' && (
           <div className="space-y-6">
+            {/* EthersAir Swap Console Panel */}
+            <EthersAirSwapPanel
+              connected={connected}
+              walletAddress={walletAddress}
+              isRealWallet={isRealWallet}
+              addToast={addToast}
+              setShowConnectModal={setShowConnectModal}
+              onSwapSuccess={(tx) => {
+                const newTx: Transaction = {
+                  id: Math.random().toString(36).substring(2, 9),
+                  type: 'swap',
+                  chain: 'Base Sepolia',
+                  details: tx.details,
+                  amount: tx.amount,
+                  status: 'completed',
+                  timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                  txHash: tx.hash
+                };
+                setTransactions(prev => [newTx, ...prev]);
+              }}
+            />
+
             {/* Network Statistics Grid */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               {[
