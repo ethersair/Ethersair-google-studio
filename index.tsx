@@ -1714,7 +1714,6 @@ export default function App() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [livePricesMultiplier, setLivePricesMultiplier] = useState<number>(1.0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
-  const [showBloggerModal, setShowBloggerModal] = useState<boolean>(false);
 
   // References
   const autoPriceInterval = useRef<NodeJS.Timeout | null>(null);
@@ -2996,119 +2995,6 @@ export default function App() {
         ))}
       </div>
 
-      {/* BLOGGER PUBLICATION MODAL */}
-      {showBloggerModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4 overflow-y-auto">
-          <div className="relative w-full max-w-3xl rounded-3xl border border-amber-500/40 bg-slate-900 p-6 md:p-8 shadow-2xl space-y-6 text-right" dir="rtl">
-            
-            {/* Header */}
-            <div className="flex items-center justify-between border-b border-white/10 pb-4">
-              <div className="flex items-center gap-3">
-                <img src="/ethersair_logo.jpg" alt="EthersAir" className="w-12 h-12 rounded-xl object-cover border border-amber-400/50 shadow-md shadow-amber-500/20" />
-                <div>
-                  <h3 className="text-lg font-black text-white">راهنمای انتشار برنامه EthersAir روی Blogspot</h3>
-                  <p className="text-xs text-amber-400 font-mono dir-ltr text-right">ethersairswapp.blogspot.com</p>
-                </div>
-              </div>
-              <button 
-                onClick={() => setShowBloggerModal(false)}
-                className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Body Explanation */}
-            <div className="space-y-4 text-xs md:text-sm text-slate-300 leading-relaxed">
-              <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 font-bold flex items-start gap-3">
-                <Check className="w-5 h-5 shrink-0 text-emerald-400 mt-0.5" />
-                <div>
-                  <strong>بله، کاملاً امکان‌پذیر است!</strong> شما می‌توانید این پلتفرم سواپ و دپ Web3 را به شکل زنده و مستقیم روی وبلاگ بلاگ‌اسپات خود به آدرس <code className="text-amber-300 font-mono dir-ltr">ethersairswapp.blogspot.com</code> منتشر و اجرا کنید.
-                </div>
-              </div>
-
-              <h4 className="font-extrabold text-white text-base border-b border-slate-800 pb-1">مراحل انتشار قدم به قدم:</h4>
-
-              <ol className="space-y-3 list-decimal list-inside text-slate-300">
-                <li className="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800">
-                  <strong className="text-amber-300">گام ۱ (آدرس اپلیکیشن):</strong> آدرس اینترنتی (URL) این برنامه را کپی کنید. برای مثال آدرس فعال فعلی:
-                  <div className="mt-1 font-mono text-xs bg-slate-900 text-indigo-300 p-2 rounded border border-indigo-500/30 dir-ltr text-left">
-                    https://ais-dev-qzlbds5c2rvbeehmpmzh7v-440897460154.europe-west1.run.app
-                  </div>
-                </li>
-
-                <li className="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800">
-                  <strong className="text-amber-300">گام ۲ (ورود به پنل Blogger):</strong> وارد پنل مدیریت <code className="font-mono text-white">blogger.com</code> شوید و وبلاگ <code className="font-mono text-amber-400 dir-ltr">ethersairswapp.blogspot.com</code> را انتخاب کنید.
-                </li>
-
-                <li className="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800">
-                  <strong className="text-amber-300">گام ۳ (ایجاد برگه یا پست جدید):</strong> از منوی سمت راست روی <strong>Pages (برگه‌ها)</strong> یا <strong>Posts (پست‌ها)</strong> کلیک کرده و یک برگه جدید با عنوان <code className="font-mono text-white">EthersAir Multi-Chain DEX & Staking</code> بسازید.
-                </li>
-
-                <li className="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800">
-                  <strong className="text-amber-300">گام ۴ (تغییر به حالت HTML View):</strong> روی آیکون مداد در بالای سمت چپ ویرایشگر بلاگ‌اسپات کلیک کرده و حالت را از Compose View به <strong>HTML View</strong> تغییر دهید.
-                </li>
-
-                <li className="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800">
-                  <strong className="text-amber-300">گام ۵ (پیست کردن کد Embed iFrame):</strong> کد زیر را کپی کرده و دقیقاً داخل ویرایشگر HTML پیست کنید:
-                  
-                  <div className="mt-2 relative">
-                    <pre className="bg-slate-950 text-amber-300 p-3 rounded-lg font-mono text-xs overflow-x-auto border border-amber-500/30 dir-ltr text-left">
-{`<style>
-  .ethersair-app-frame {
-    width: 100%;
-    height: 900px;
-    border: none;
-    border-radius: 16px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-  }
-</style>
-
-<iframe 
-  src="https://ais-dev-qzlbds5c2rvbeehmpmzh7v-440897460154.europe-west1.run.app" 
-  class="ethersair-app-frame"
-  allow="clipboard-write; ethereum; wallet"
-  loading="lazy">
-</iframe>`}
-                    </pre>
-                    <button
-                      onClick={() => {
-                        const iframeCode = `<style>\n  .ethersair-app-frame {\n    width: 100%;\n    height: 900px;\n    border: none;\n    border-radius: 16px;\n    box-shadow: 0 10px 30px rgba(0,0,0,0.5);\n  }\n</style>\n\n<iframe \n  src="https://ais-dev-qzlbds5c2rvbeehmpmzh7v-440897460154.europe-west1.run.app" \n  class="ethersair-app-frame"\n  allow="clipboard-write; ethereum; wallet"\n  loading="lazy">\n</iframe>`;
-                        navigator.clipboard.writeText(iframeCode);
-                        addToast('کد کپی شد!', 'کد iFrame برای انتشار روی Blogspot کپی شد', 'success');
-                      }}
-                      className="absolute top-2 left-2 bg-amber-500 text-slate-950 font-extrabold text-[10px] px-2.5 py-1 rounded hover:bg-amber-400 transition"
-                    >
-                      کپی کد HTML
-                    </button>
-                  </div>
-                </li>
-
-                <li className="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800">
-                  <strong className="text-amber-300">گام ۶ (انتشار و تست زنده):</strong> دکمه Publish را بزنید. تمام! حالا کاربران روی آدرس <code className="text-amber-400 font-mono dir-ltr">ethersairswapp.blogspot.com</code> می‌توانند مستقیم به MetaMask/Phantom متصل شوند و سواپ و استیکینگ را انجام دهند.
-                </li>
-              </ol>
-
-              {/* Tips Note */}
-              <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-200">
-                <strong>💡 چرا iFrame بهترین روش برای Blogspot است؟</strong> زیرا سیستم قالب‌بندی Blogger کدهای سنگین JavaScript را دستکاری یا سانسور می‌کند. اما با <code className="font-mono text-white">iframe</code>، افزونه‌های Web3 مانند MetaMask و Phantom بدون هیچ محدودیتی کار می‌کنند.
-              </div>
-            </div>
-
-            {/* Footer button */}
-            <div className="flex justify-end pt-2 border-t border-white/10">
-              <button
-                onClick={() => setShowBloggerModal(false)}
-                className="px-6 py-2.5 rounded-xl bg-amber-500 text-slate-950 font-black text-xs hover:bg-amber-400 transition"
-              >
-                متوجه شدم (بستن)
-              </button>
-            </div>
-
-          </div>
-        </div>
-      )}
-
       {/* CONNECT WALLET MODAL */}
       {showConnectModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
@@ -3351,17 +3237,6 @@ export default function App() {
                 </div>
               </div>
             </div>
-
-            {/* Blogspot Publication Guide Button */}
-            <button
-              id="blogspot-guide-header-btn"
-              onClick={() => setShowBloggerModal(true)}
-              className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-xs font-bold text-amber-300 transition"
-              title="راهنمای انتشار روی Blogspot"
-            >
-              <Globe className="w-3.5 h-3.5 text-amber-400" />
-              <span>انتشار روی Blogspot</span>
-            </button>
 
             {/* Dynamic Chain Dropdown */}
             <div className="relative group">
@@ -3726,7 +3601,7 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Right Side: Quick Action Buttons & Blogger Guide trigger */}
+                {/* Right Side: Quick Action Buttons */}
                 <div className="flex flex-col sm:flex-row lg:flex-col gap-3 w-full sm:w-auto shrink-0">
                   <button
                     onClick={() => setActiveTab('ethersair')}
@@ -3742,14 +3617,6 @@ export default function App() {
                   >
                     <Globe className="w-4 h-4 text-blue-400" />
                     بریج بین‌زنجیره‌ای LayerZero
-                  </button>
-
-                  <button
-                    onClick={() => setShowBloggerModal(true)}
-                    className="px-5 py-3 rounded-xl bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 text-amber-300 font-bold text-xs transition flex items-center justify-center gap-2"
-                  >
-                    <FileText className="w-4 h-4 text-amber-400" />
-                    راهنمای انتشار روی blogspot.com ↗
                   </button>
                 </div>
               </div>
