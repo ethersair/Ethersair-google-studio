@@ -4,6 +4,35 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Apex DeFi - Multi-Chain Dashboard</title>
+    <script>
+      // Suppress extension/iframe port disconnection errors
+      (function() {
+        function shouldSuppress(msg) {
+          if (!msg) return false;
+          var str = typeof msg === 'string' ? msg : (msg.message || String(msg));
+          return str.includes('Could not establish connection') ||
+                 str.includes('Receiving end does not exist') ||
+                 str.includes('Extension context invalidated') ||
+                 str.includes('The message port closed before a response was received');
+        }
+
+        window.addEventListener('error', function(e) {
+          if (shouldSuppress(e.message) || shouldSuppress(e.error)) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            return true;
+          }
+        }, true);
+
+        window.addEventListener('unhandledrejection', function(e) {
+          if (shouldSuppress(e.reason)) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            return true;
+          }
+        }, true);
+      })();
+    </script>
   </head>
   <body class="bg-slate-950 text-slate-100 min-h-screen">
     <div id="root"></div>

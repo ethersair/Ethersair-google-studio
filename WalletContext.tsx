@@ -110,43 +110,83 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
   // Setup listeners for real MetaMask / Web3 provider events
   useEffect(() => {
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      const reasonStr = String(event.reason?.message || event.reason || '');
+      if (
+        reasonStr.includes('Could not establish connection') ||
+        reasonStr.includes('Receiving end does not exist') ||
+        reasonStr.includes('Extension context invalidated')
+      ) {
+        event.preventDefault();
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('unhandledrejection', handleUnhandledRejection);
+    }
+
     if (typeof window !== 'undefined' && (window as any).ethereum) {
       const handleAccountsChanged = async (accounts: string[]) => {
-        if (accounts.length === 0) {
-          handleDisconnectRef.current();
-        } else {
-          const newAddress = accounts[0];
-          setWalletAddress(newAddress);
-          addToast('Account Changed', `Switched to ${newAddress.slice(0, 6)}...${newAddress.slice(-4)}`, 'info');
-          await refreshBalanceForAddressRef.current(newAddress);
+        try {
+          if (accounts.length === 0) {
+            handleDisconnectRef.current();
+          } else {
+            const newAddress = accounts[0];
+            setWalletAddress(newAddress);
+            addToast('Account Changed', `Switched to ${newAddress.slice(0, 6)}...${newAddress.slice(-4)}`, 'info');
+            await refreshBalanceForAddressRef.current(newAddress);
+          }
+        } catch (err) {
+          console.warn('Error handling account change:', err);
         }
       };
 
       const handleChainChanged = (chainIdHex: string) => {
-        const decimalChainId = parseInt(chainIdHex, 16);
-        let chainKey = 'ethereum';
-        if (decimalChainId === 1) chainKey = 'ethereum';
-        else if (decimalChainId === 84532 || decimalChainId === 8453) chainKey = 'base-sepolia';
-        else if (decimalChainId === 137) chainKey = 'polygon';
-        else if (decimalChainId === 42161) chainKey = 'arbitrum';
-        else if (decimalChainId === 10) chainKey = 'optimism';
-        else if (decimalChainId === 56) chainKey = 'bsc';
-        else chainKey = `chain-${decimalChainId}`;
+        try {
+          const decimalChainId = parseInt(chainIdHex, 16);
+          let chainKey = 'ethereum';
+          if (decimalChainId === 1) chainKey = 'ethereum';
+          else if (decimalChainId === 84532 || decimalChainId === 8453) chainKey = 'base-sepolia';
+          else if (decimalChainId === 137) chainKey = 'polygon';
+          else if (decimalChainId === 42161) chainKey = 'arbitrum';
+          else if (decimalChainId === 10) chainKey = 'optimism';
+          else if (decimalChainId === 56) chainKey = 'bsc';
+          else chainKey = `chain-${decimalChainId}`;
 
-        setSelectedChainId(chainKey);
-        addToast('Network Changed', `MetaMask switched network to Chain ID ${decimalChainId}`, 'info');
+          setSelectedChainId(chainKey);
+          addToast('Network Changed', `MetaMask switched network to Chain ID ${decimalChainId}`, 'info');
+        } catch (err) {
+          console.warn('Error handling chain change:', err);
+        }
       };
 
-      (window as any).ethereum.on('accountsChanged', handleAccountsChanged);
-      (window as any).ethereum.on('chainChanged', handleChainChanged);
+      try {
+        (window as any).ethereum.on('accountsChanged', handleAccountsChanged);
+        (window as any).ethereum.on('chainChanged', handleChainChanged);
+      } catch (err) {
+        console.warn('Unable to subscribe to provider events:', err);
+      }
 
       return () => {
-        if ((window as any).ethereum.removeListener) {
-          (window as any).ethereum.removeListener('accountsChanged', handleAccountsChanged);
-          (window as any).ethereum.removeListener('chainChanged', handleChainChanged);
+        if (typeof window !== 'undefined') {
+          window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+        }
+        try {
+          if ((window as any).ethereum && (window as any).ethereum.removeListener) {
+            (window as any).ethereum.removeListener('accountsChanged', handleAccountsChanged);
+            (window as any).ethereum.removeListener('chainChanged', handleChainChanged);
+          }
+        } catch {
+          // Ignore
         }
       };
     }
+
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+      }
+    };
   }, [addToast]);
 
   const refreshBalance = useCallback(async () => {
